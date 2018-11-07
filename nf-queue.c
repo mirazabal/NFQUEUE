@@ -2,47 +2,46 @@
 #include <pthread.h>
 
 #include <errno.h>
-    #include <stdio.h>
-     #include <stdlib.h>
-     #include <unistd.h>
-     #include <string.h>
-     #include <time.h>
-     #include <arpa/inet.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <time.h>
+#include <arpa/inet.h>
      
-     #include <libmnl/libmnl.h>
-    #include <linux/netfilter.h>
-    #include <linux/netfilter/nfnetlink.h>
+#include <libmnl/libmnl.h>
+#include <linux/netfilter.h>
+#include <linux/netfilter/nfnetlink.h>
     
-   #include <linux/types.h>
-    #include <linux/netfilter/nfnetlink_queue.h>
+#include <linux/ip.h>
+#include <linux/types.h>
+#include <linux/netfilter/nfnetlink_queue.h>
     
-    #include <libnetfilter_queue/libnetfilter_queue.h>
+#include <libnetfilter_queue/libnetfilter_queue.h>
     
-    /* only for NFQA_CT, not needed otherwise: */
-    #include <linux/netfilter/nfnetlink_conntrack.h>
+/* only for NFQA_CT, not needed otherwise: */
+#include <linux/netfilter/nfnetlink_conntrack.h>
     
-    static struct mnl_socket *nl;
-    
+static struct mnl_socket *nl;
+static pthread_t thread_nfqueue;
 static void(*add_packet_sched_cb)(uint32_t,uint32_t,uint32_t);
 
-    static struct nlmsghdr *
-    nfq_hdr_put(char *buf, int type, uint32_t queue_num)
-    {
-            struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
-            nlh->nlmsg_type = (NFNL_SUBSYS_QUEUE << 8) | type;
-            nlh->nlmsg_flags = NLM_F_REQUEST;
-    
-            struct nfgenmsg *nfg = mnl_nlmsg_put_extra_header(nlh, sizeof(*nfg));
-            nfg->nfgen_family = AF_UNSPEC;
-            nfg->version = NFNETLINK_V0;
-            nfg->res_id = htons(queue_num);
-    
-            return nlh;
-    }
+static struct nlmsghdr* nfq_hdr_put(char *buf, int type, uint32_t queue_num)
+{
+	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+	nlh->nlmsg_type = (NFNL_SUBSYS_QUEUE << 8) | type;
+	nlh->nlmsg_flags = NLM_F_REQUEST;
+
+	struct nfgenmsg *nfg = mnl_nlmsg_put_extra_header(nlh, sizeof(*nfg));
+	nfg->nfgen_family = AF_UNSPEC;
+	nfg->version = NFNETLINK_V0;
+	nfg->res_id = htons(queue_num);
+
+	return nlh;
+}
     
 void send_verdict_nfqueue(uint32_t queue_num, uint32_t id, uint32_t packetDecision)
 {
-
 	char buf[MNL_SOCKET_BUFFER_SIZE];
 	struct nlmsghdr *nlh;
 	struct nlattr *nest;
@@ -66,7 +65,21 @@ void send_verdict_nfqueue(uint32_t queue_num, uint32_t id, uint32_t packetDecisi
 		exit(EXIT_FAILURE);
 	}
 }
-    
+
+
+static void print_ip_info(struct iphdr* ipHeader)
+{
+//	unsigned char* payloadData = (unsigned char*)mnl_attr_get_payload(attr[NFQA_PAYLOAD]);
+	struct in_addr ip_addr;
+  ip_addr.s_addr = ipHeader->saddr;
+	char* ip_saddr =  inet_ntoa(ip_addr);
+  printf("The IP address source is %s\n",ip_saddr);
+  ip_addr.s_addr = ipHeader->daddr;
+	char* ip_daddr =  inet_ntoa(ip_addr);
+	printf("The IP address destination = %s\n", ip_daddr);
+	
+}
+
 static int queue_cb(const struct nlmsghdr *nlh, void *data)
 {
 	struct nfqnl_msg_packet_hdr *ph = NULL;
@@ -88,9 +101,8 @@ static int queue_cb(const struct nlmsghdr *nlh, void *data)
 	}
 
 	ph = mnl_attr_get_payload(attr[NFQA_PACKET_HDR]);
-
 	plen = mnl_attr_get_payload_len(attr[NFQA_PAYLOAD]);
-	/* void *payload = mnl_attr_get_payload(attr[NFQA_PAYLOAD]); */
+	
 
 	skbinfo = attr[NFQA_SKB_INFO] ? ntohl(mnl_attr_get_u32(attr[NFQA_SKB_INFO])) : 0;
 
@@ -107,13 +119,13 @@ static int queue_cb(const struct nlmsghdr *nlh, void *data)
 	printf("packet received (id=%u hw=0x%04x hook=%u, payload len %u",
 			id, ntohs(ph->hw_protocol), ph->hook, plen);
 
-	/*
-		 105          * ip/tcp checksums are not yet valid, e.g. due to GRO/GSO.
-		 106          * The application should behave as if the checksums are correct.
-		 107          *
-		 108          * If these packets are later forwarded/sent out, the checksums will
-		 109          * be corrected by kernel/hardware.
-		 110          */
+/*
+ * ip/tcp checksums are not yet valid, e.g. due to GRO/GSO.
+ * The application should behave as if the checksums are correct.
+ *
+ * If these packets are later forwarded/sent out, the checksums will
+ * be corrected by kernel/hardware.
+ */
 	if (skbinfo & NFQA_SKB_CSUMNOTREADY)
 		printf(", checksum not ready");
 	puts(")");
@@ -121,9 +133,9 @@ static int queue_cb(const struct nlmsghdr *nlh, void *data)
 //	nfq_send_verdict(ntohs(nfg->res_id), id);
 	add_packet_sched_cb( ntohs(nfg->res_id), id, 1);
 
+	print_ip_info((struct iphdr *)( mnl_attr_get_payload(attr[NFQA_PAYLOAD])));
 	return MNL_CB_OK;
 }
-
 
 static void* thread_func(void* notUsed)
 {
@@ -135,10 +147,7 @@ static void* thread_func(void* notUsed)
 		exit(EXIT_FAILURE);
 	}
 
-
-	
 	unsigned int portid = mnl_socket_get_portid(nl);
-
 	for (;;) {
 		int ret = mnl_socket_recvfrom(nl, buf, sizeof_buf);
 		if (ret == -1) {
@@ -153,10 +162,6 @@ static void* thread_func(void* notUsed)
 		}
 	}
 }
-
-
-static pthread_t thread_nfqueue;
-
 
 void init_nfqueue(unsigned int queue_num, void(*cb)(uint32_t, uint32_t, uint32_t))
 {
@@ -223,16 +228,16 @@ void init_nfqueue(unsigned int queue_num, void(*cb)(uint32_t, uint32_t, uint32_t
 	}
 
 	/* ENOBUFS is signalled to userspace when packets were lost
-		           * on kernel side.  In most cases, userspace isn't interested
-		          * in this information, so turn it off.
-		           */
+	 * on kernel side.  In most cases, userspace isn't interested
+	 * in this information, so turn it off.
+	 */
 	ret = 1;
 	mnl_socket_setsockopt(nl, NETLINK_NO_ENOBUFS, &ret, sizeof(int));
 
 	pthread_create(&thread_nfqueue, NULL, thread_func, NULL );
 
 
-//	return 0;
+	//	return 0;
 }
 
 
@@ -240,7 +245,4 @@ void close_nfqueue()
 {
 	mnl_socket_close(nl);
 }
-
-
-
 
