@@ -1,5 +1,8 @@
 #include "nf-queue.h"
+#include "scheduler.h"
+
 #include <stdio.h>
+#include <stddef.h>
 
 int main(int argc, char *argv[])
 {
@@ -10,8 +13,9 @@ int main(int argc, char *argv[])
 	unsigned int queue_num = atoi(argv[1]);
 
 
-	init_nfqueue(queue_num);
-
+	init_nfqueue(queue_num,&add_packet_sched);
+	init_sched(&send_verdict_nfqueue);
+	
 	for(;;)
 	{
 	
