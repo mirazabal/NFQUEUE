@@ -1,4 +1,5 @@
 #include "nf-queue.h"
+#include "hash_function.h"
 #include <pthread.h>
 
 #include <errno.h>
@@ -77,34 +78,39 @@ static void print_ip_info(struct iphdr* ipHeader)
   ip_addr.s_addr = ipHeader->daddr;
 	char* ip_daddr =  inet_ntoa(ip_addr);
 	printf("The IP address destination = %s\n", ip_daddr);
+}
+
+static uint32_t create_hash(struct iphdr* ipHeader)
+{
+	struct in_addr ip_addr;
+  
+	ip_addr.s_addr = ipHeader->saddr;
+	char* ip_saddr =  inet_ntoa(ip_addr);
+  
+	ip_addr.s_addr = ipHeader->daddr;
+	char* ip_daddr =  inet_ntoa(ip_addr);
 	
+	char buffer[256];
+	strncpy(buffer, ip_saddr, sizeof(buffer));
+	strncat(buffer, ip_daddr, sizeof(buffer));
+
+	return jenkins_one_at_a_time_hash(buffer, strlen(buffer));
 }
 
 static int queue_cb(const struct nlmsghdr *nlh, void *data)
 {
-	struct nfqnl_msg_packet_hdr *ph = NULL;
 	struct nlattr *attr[NFQA_MAX+1] = {};
-	uint32_t id = 0, skbinfo;
-	struct nfgenmsg *nfg;
-	uint16_t plen;
 
 	if (nfq_nlmsg_parse(nlh, attr) < 0) {
 		perror("problems parsing");
 		return MNL_CB_ERROR;
 	}
-
-	nfg = mnl_nlmsg_get_payload(nlh);
-
 	if (attr[NFQA_PACKET_HDR] == NULL) {
 		fputs("metaheader not set\n", stderr);
 		return MNL_CB_ERROR;
 	}
 
-	ph = mnl_attr_get_payload(attr[NFQA_PACKET_HDR]);
-	plen = mnl_attr_get_payload_len(attr[NFQA_PAYLOAD]);
-	
-
-	skbinfo = attr[NFQA_SKB_INFO] ? ntohl(mnl_attr_get_u32(attr[NFQA_SKB_INFO])) : 0;
+	uint16_t plen = mnl_attr_get_payload_len(attr[NFQA_PAYLOAD]);
 
 	if (attr[NFQA_CAP_LEN]) {
 		uint32_t orig_len = ntohl(mnl_attr_get_u32(attr[NFQA_CAP_LEN]));
@@ -112,10 +118,12 @@ static int queue_cb(const struct nlmsghdr *nlh, void *data)
 			printf("truncated ");
 	}
 
+	uint32_t skbinfo = attr[NFQA_SKB_INFO] ? ntohl(mnl_attr_get_u32(attr[NFQA_SKB_INFO])) : 0;
 	if (skbinfo & NFQA_SKB_GSO)
 		printf("GSO ");
 
-	id = ntohl(ph->packet_id);
+	struct nfqnl_msg_packet_hdr* ph = mnl_attr_get_payload(attr[NFQA_PACKET_HDR]);
+	uint32_t id = ntohl(ph->packet_id);
 	printf("packet received (id=%u hw=0x%04x hook=%u, payload len %u",
 			id, ntohs(ph->hw_protocol), ph->hook, plen);
 
@@ -131,11 +139,22 @@ static int queue_cb(const struct nlmsghdr *nlh, void *data)
 	puts(")");
 
 //	nfq_send_verdict(ntohs(nfg->res_id), id);
-	add_packet_sched_cb( ntohs(nfg->res_id), id, 1);
 
-	print_ip_info((struct iphdr *)( mnl_attr_get_payload(attr[NFQA_PAYLOAD])));
+	struct nfgenmsg* nfg = mnl_nlmsg_get_payload(nlh);
+	
+
+	struct iphdr* ipHeader = (struct iphdr *)( mnl_attr_get_payload(attr[NFQA_PAYLOAD]));
+	print_ip_info(ipHeader);
+	uint32_t hash = create_hash(ipHeader);
+	
+	if(ipHeader->protocol == IPPROTO_ICMP){
+		add_packet_sched_cb( ntohs(nfg->res_id), id, 0);
+	} else {
+		add_packet_sched_cb( ntohs(nfg->res_id), id, hash);
+	}
 	return MNL_CB_OK;
 }
+
 
 static void* thread_func(void* notUsed)
 {
@@ -167,12 +186,6 @@ void init_nfqueue(unsigned int queue_num, void(*cb)(uint32_t, uint32_t, uint32_t
 {
 	add_packet_sched_cb = cb;
 
-	char *buf;
-	/* largest possible packet payload, plus netlink data overhead: */
-	size_t sizeof_buf = 0xffff + (MNL_SOCKET_BUFFER_SIZE/2);
-	struct nlmsghdr *nlh;
-	int ret;
-	unsigned int portid;
 	nl = mnl_socket_open(NETLINK_NETFILTER);
 	if (nl == NULL) {
 		perror("mnl_socket_open");
@@ -183,16 +196,18 @@ void init_nfqueue(unsigned int queue_num, void(*cb)(uint32_t, uint32_t, uint32_t
 		perror("mnl_socket_bind");
 		exit(EXIT_FAILURE);
 	}
-	portid = mnl_socket_get_portid(nl);
+	unsigned int portid = mnl_socket_get_portid(nl);
 
-	buf = malloc(sizeof_buf);
+	/* largest possible packet payload, plus netlink data overhead: */
+	size_t sizeof_buf = 0xffff + (MNL_SOCKET_BUFFER_SIZE/2);
+	char* buf = malloc(sizeof_buf);
 	if (!buf) {
 		perror("allocate receive buffer");
 		exit(EXIT_FAILURE);
 	}
 
 	/* PF_(UN)BIND is not needed with kernels 3.8 and later */
-	nlh = nfq_hdr_put(buf, NFQNL_MSG_CONFIG, 0);
+	struct nlmsghdr* nlh = nfq_hdr_put(buf, NFQNL_MSG_CONFIG, 0);
 	nfq_nlmsg_cfg_put_cmd(nlh, AF_INET, NFQNL_CFG_CMD_PF_UNBIND);
 
 	if (mnl_socket_sendto(nl, nlh, nlh->nlmsg_len) < 0) {
@@ -217,6 +232,8 @@ void init_nfqueue(unsigned int queue_num, void(*cb)(uint32_t, uint32_t, uint32_t
 	}
 
 	nlh = nfq_hdr_put(buf, NFQNL_MSG_CONFIG, queue_num);
+	free(buf);
+
 	nfq_nlmsg_cfg_put_params(nlh, NFQNL_COPY_PACKET, 0xffff);
 
 	mnl_attr_put_u32(nlh, NFQA_CFG_FLAGS, htonl(NFQA_CFG_F_GSO));
@@ -231,12 +248,10 @@ void init_nfqueue(unsigned int queue_num, void(*cb)(uint32_t, uint32_t, uint32_t
 	 * on kernel side.  In most cases, userspace isn't interested
 	 * in this information, so turn it off.
 	 */
-	ret = 1;
+	int ret = 1;
 	mnl_socket_setsockopt(nl, NETLINK_NO_ENOBUFS, &ret, sizeof(int));
 
 	pthread_create(&thread_nfqueue, NULL, thread_func, NULL );
-
-
 	//	return 0;
 }
 
