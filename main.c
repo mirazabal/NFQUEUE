@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stddef.h>
+#include <pthread.h>
 
 int main(int argc, char *argv[])
 {
@@ -18,7 +19,7 @@ int main(int argc, char *argv[])
 	
 	for(;;)
 	{
-	
+		usleep(1000000);
 	}
 	return 0;
 }

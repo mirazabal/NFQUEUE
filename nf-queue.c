@@ -78,6 +78,7 @@ static void print_ip_info(struct iphdr* ipHeader)
   ip_addr.s_addr = ipHeader->daddr;
 	char* ip_daddr =  inet_ntoa(ip_addr);
 	printf("The IP address destination = %s\n", ip_daddr);
+	printf("Total length %u \n", (unsigned int)ipHeader->tot_len);
 }
 
 static uint32_t create_hash(struct iphdr* ipHeader)
@@ -114,18 +115,18 @@ static int queue_cb(const struct nlmsghdr *nlh, void *data)
 
 	if (attr[NFQA_CAP_LEN]) {
 		uint32_t orig_len = ntohl(mnl_attr_get_u32(attr[NFQA_CAP_LEN]));
-		if (orig_len != plen)
-			printf("truncated ");
+//		if (orig_len != plen)
+//			printf("truncated ");
 	}
 
 	uint32_t skbinfo = attr[NFQA_SKB_INFO] ? ntohl(mnl_attr_get_u32(attr[NFQA_SKB_INFO])) : 0;
-	if (skbinfo & NFQA_SKB_GSO)
-		printf("GSO ");
+//	if (skbinfo & NFQA_SKB_GSO)
+//		printf("GSO ");
 
 	struct nfqnl_msg_packet_hdr* ph = mnl_attr_get_payload(attr[NFQA_PACKET_HDR]);
 	uint32_t id = ntohl(ph->packet_id);
-	printf("packet received (id=%u hw=0x%04x hook=%u, payload len %u",
-			id, ntohs(ph->hw_protocol), ph->hook, plen);
+//	printf("packet received (id=%u hw=0x%04x hook=%u, payload len %u",
+//			id, ntohs(ph->hw_protocol), ph->hook, plen);
 
 /*
  * ip/tcp checksums are not yet valid, e.g. due to GRO/GSO.
@@ -134,9 +135,9 @@ static int queue_cb(const struct nlmsghdr *nlh, void *data)
  * If these packets are later forwarded/sent out, the checksums will
  * be corrected by kernel/hardware.
  */
-	if (skbinfo & NFQA_SKB_CSUMNOTREADY)
-		printf(", checksum not ready");
-	puts(")");
+//	if (skbinfo & NFQA_SKB_CSUMNOTREADY)
+//		printf(", checksum not ready");
+//	puts(")");
 
 //	nfq_send_verdict(ntohs(nfg->res_id), id);
 
@@ -144,7 +145,7 @@ static int queue_cb(const struct nlmsghdr *nlh, void *data)
 	
 
 	struct iphdr* ipHeader = (struct iphdr *)( mnl_attr_get_payload(attr[NFQA_PAYLOAD]));
-	print_ip_info(ipHeader);
+	//print_ip_info(ipHeader);
 	uint32_t hash = create_hash(ipHeader);
 	
 	if(ipHeader->protocol == IPPROTO_ICMP){
@@ -196,7 +197,6 @@ void init_nfqueue(unsigned int queue_num, void(*cb)(uint32_t, uint32_t, uint32_t
 		perror("mnl_socket_bind");
 		exit(EXIT_FAILURE);
 	}
-	unsigned int portid = mnl_socket_get_portid(nl);
 
 	/* largest possible packet payload, plus netlink data overhead: */
 	size_t sizeof_buf = 0xffff + (MNL_SOCKET_BUFFER_SIZE/2);
