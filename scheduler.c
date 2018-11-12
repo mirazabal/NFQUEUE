@@ -1,19 +1,20 @@
-#define MAX_NUM_PACKETS 2048
-
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-
 #include <unistd.h>
 #include "scheduler.h"
 #include "mib_queue.h"
 
+#define MAX_NUM_PACKETS 2048
 
 static int const queue_num = 0;
 static int endThread = 1;
 static pthread_t thread_sched;
+static const int forwardPacket = 1;
+
+static void (*send_verdict_cb)(uint32_t, uint32_t, uint32_t);
 
 static int get_it_val(int it)
 {
@@ -37,6 +38,8 @@ static void* thread_func(void *notUsed)
 			uint32_t* idP = mib_queue_deque();	
 			if(idP == NULL)
 				break;
+
+			send_verdict_cb( queue_num, *(uint32_t*)idP,forwardPacket);
 			free(idP);
 			++counter;
 			--queueSize;
@@ -45,9 +48,9 @@ static void* thread_func(void *notUsed)
 	return NULL;
 }
 
-
 void init_sched( void(*verdict)(uint32_t, uint32_t, uint32_t))
 {
+	send_verdict_cb = verdict;
 	mib_queue_init(verdict);
 	pthread_create(&thread_sched, NULL, thread_func, NULL );
 }

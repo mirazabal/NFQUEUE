@@ -1,20 +1,27 @@
-#include "mib_queue_codel_impl.h"
-#include "mib_queue_lfds_impl.h"
-
+#include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include "mib_queue_codel.h"
+#include "mib_queue.h"
 
 #define MAX_NUM_PACKETS 4096
-static int packets_dropped = 0;
 
+static uint64_t packets_dropped = 0;
 static struct PacketTimer pTimer;
 static uint32_t first_above_time_; // = 0; //
 static uint32_t drop_next_;// = 0;
 static uint32_t count_ ; //= 0;
 static uint32_t lastcount_; // = 0;
 static uint8_t	dropping_ ; //= false;
-static const uint32_t interval_  = 100000;// <>  TARGET =  MS2TIME(5);// 5ms TARGET queue delay
+static const uint32_t interval_  = 200000;// <>  TARGET =  MS2TIME(5);// 5ms TARGET queue delay
 static uint32_t const target_ = 10000;
+
+static const int queueNum = 0;
+static const int dropPacket = 0;
+
+static void (*send_verdict_cb)(uint32_t, uint32_t, uint32_t);
+
 
 struct PacketTimer
 {
@@ -62,13 +69,18 @@ static int64_t control_law(int64_t t, uint32_t count)
 
 struct dodequeue_result
 {
-		mem_block_t* m;
+		void* m;
 		uint32_t ok_to_drop;
 };
 
-static struct	dodequeue_result dodequeue(mib_list_t* listP, int64_t now)
+static struct	dodequeue_result dodequeue(int64_t now)
 {
-	mem_block_t* p =  listP->head; 
+	void* p = mib_queue_deque();
+	if(p == NULL){
+		struct dodequeue_result ret = { .m = p, .ok_to_drop = 0};
+		return ret;
+	}
+
 	int64_t sojourn_time = now - pTimer.usecs[pTimer.pos-1];
 		if (sojourn_time < target_ ){ //|| bytes() <= maxpacket_) {
 			// went below - stay below for at least INTERVAL
@@ -91,59 +103,28 @@ static struct	dodequeue_result dodequeue(mib_list_t* listP, int64_t now)
 		return ret;
 }
 
-void mib_list_init (mib_list_t * listP)
+void mib_queue_codel_init( void(*verdict)(uint32_t, uint32_t, uint32_t))
 {
-	if (listP == NULL)
-	 	return;
-
-	mib_init_times_called = mib_init_times_called + 1; 
-	for(int i = 0; i < 25; i++){
-		printf("number of times mib_init_times called %d \n", mib_init_times_called );
-	}
-
-	listP->tail = NULL;
-  listP->head = NULL;
-  listP->nb_elements = 0;
 	init_codel_params();
+	send_verdict_cb = verdict;
+	mib_queue_init(verdict);
 }
 
-void mib_list_free (mib_list_t * listP)
+static void drop_packet()
 {
-	if (listP == NULL)
-	 	return;
-	
-  mem_block_t      *le;
-  while( (le = (mem_block_t*)mib_list_get_head(listP) )){
-		 mib_list_remove_head (listP);
-	 	 free_mem_block (le, __func__);
-  }
-	pTimer.pos = 0;
+		void* data = mib_queue_deque();
+		if(data == NULL) return;
+
+		send_verdict_cb( queueNum, *(uint32_t*)data, dropPacket);
+		free(data);
+		pTimer.pos = pTimer.pos - 1;
 }
 
-static void free_sdu(mib_list_t* listP, rlc_buffer_occupancy_t* rlc_boP)
+
+void* mib_queue_codel_deque()
 {
-	mem_block_t* sdu_in_buffer = mib_list_get_head(listP);
-  struct rlc_um_tx_sdu_management * sdu_mngt_p = ((struct rlc_um_tx_sdu_management *) (sdu_in_buffer->data));
-	*rlc_boP -= sdu_mngt_p->sdu_remaining_size;
-	mib_list_remove_head(listP);
-	free_mem_block (sdu_in_buffer, __func__);
-	sdu_mngt_p    = NULL;
-}
-
-mem_block_t* mib_list_get_head_or_drop(mib_list_t * listP, rlc_buffer_occupancy_t* rlc_boP)
-{
-	if (listP == NULL)
-		return NULL;
-	if (listP->head == NULL)
-		return NULL;	
-
-	if(listP->nb_elements == 0){ // size == 0
-		first_above_time_ = 0;
-		return NULL;
-	}
-
 	int64_t now = get_time_us();
-	struct dodequeue_result r = dodequeue(listP,now);
+	struct dodequeue_result r = dodequeue(now);
 	uint32_t delta;
 	if (dropping_ == 1) {
 		if ( r.ok_to_drop == 0) { //false
@@ -152,15 +133,21 @@ mem_block_t* mib_list_get_head_or_drop(mib_list_t * listP, rlc_buffer_occupancy_
 			return r.m;
 		}
 		while (now >= drop_next_ && (dropping_ == 1)) {
-			free_sdu(listP, rlc_boP);
+			drop_packet(); // free_sdu(listP, rlc_boP);
 			packets_dropped++;
 			printf(" dropping packet.. %d \n", packets_dropped );
-			if( listP->nb_elements == 0 ){
+			size_t queueSize = mib_queue_size();
+			if(queueSize == 0){
 				first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
 				return NULL;
 			}
-			r = dodequeue(listP, now);
-			if (r.ok_to_drop == 0) { //false
+			r = dodequeue(now);
+		/*	if(r.m == NULL){
+				first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
+				return NULL;
+			}
+*/
+			if (r.ok_to_drop == 0 || r.m == NULL) { //false
 				// leave drop state
 				dropping_ = 0;// false;
 			} else {
@@ -170,14 +157,19 @@ mem_block_t* mib_list_get_head_or_drop(mib_list_t * listP, rlc_buffer_occupancy_
 			}
 		}
 	} else if (r.ok_to_drop == 1) {
-		free_sdu(listP, rlc_boP);
+		drop_packet(); // free_sdu(listP, rlc_boP);
 		packets_dropped++;
 		printf(" dropping packet.. %d \n", packets_dropped );
-		if( listP->nb_elements == 0){
-			first_above_time_ = 0;
+		size_t queueSize = mib_queue_size();
+		if(queueSize == 0){
+			first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
 			return NULL;
 		}
-		r = dodequeue(listP, now);
+		r = dodequeue(now);
+	/*	if(r.m == NULL){
+			first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
+			return NULL;
+		}*/
 		dropping_ = 1;// true;
 		delta = count_ - lastcount_;
 		count_ = 1;
@@ -186,88 +178,24 @@ mem_block_t* mib_list_get_head_or_drop(mib_list_t * listP, rlc_buffer_occupancy_
 		drop_next_ = control_law(now, count_);
 		lastcount_ = count_;
 	}
-	return r.m;
-}
-
-mem_block_t* mib_list_get_head (mib_list_t * listP)
-{
-	if (listP == NULL)
-		return NULL;
-
-	return listP->head; 
-}
-
-void mib_list_remove_head (mib_list_t * listP)
-{
-	printf("Into mib_list_remove_head \n");
-	if (listP == NULL){
-	 	return;
-	}
-
-	mem_block_t* head = listP->head;
-	if (head == NULL)
-		return;// head; 
-
-	listP->head = head->next;
-
-	if (listP->head == NULL) 
-		listP->tail = NULL;
-
 	pTimer.pos = pTimer.pos - 1;
-	listP->nb_elements = listP->nb_elements - 1;
-}
-
-void mib_list_add_tail(mem_block_t* elementP, mib_list_t * listP)
-{
-	if (elementP == NULL || listP == NULL)
-	 	return;
-
-//	elementP->next = NULL;
-	mem_block_t* tail = listP->tail;
-
-	if (tail == NULL) {
-		listP->head = elementP; 
-	} else {
-		tail->next = elementP;
-	}
-	listP->tail = elementP;
-
-	pTimer.usecs[pTimer.pos] = get_time_us();
-	pTimer.pos = pTimer.pos + 1;
-	listP->nb_elements = listP->nb_elements + 1;
-}
-
-
-
-
-
-
-
-
-void mib_queue_codel_init()
-{
-	mib_queue_lfds_init();
-}
-
-void mib_queue_codel_free()
-{
-
+	return r.m;
 }
 
 void mib_queue_codel_enqueu(void* data)
 {
-
-}
-
-void* mib_queue_codel_deque()
-{
-
+	mib_queue_enqueu(data);
+	pTimer.usecs[pTimer.pos] = get_time_us();
+	pTimer.pos = pTimer.pos + 1;
 }
 
 size_t mib_queue_codel_size()
 {
-
-	mib_queue_lfds_size();
+	return mib_queue_size();
 }
 
+void mib_queue_codel_free()
+{
+	mib_queue_free();
+}
 
