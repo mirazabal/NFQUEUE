@@ -1,9 +1,14 @@
 #include "mib_queue.h"
 #include "mib_queue_lfds_impl.h"
+#include <stdint.h>
+#include <stdio.h>
 
+static void (*send_verdict_cb)(uint32_t, uint32_t, uint32_t);
+static int const queue_num = 0;
 
-void mib_queue_init()
+void mib_queue_init(void (*cb_)(uint32_t, uint32_t, uint32_t))
 {
+	send_verdict_cb = cb_;
 	mib_queue_lfds_init();
 }
 
@@ -14,7 +19,10 @@ void mib_queue_enqueu(void* data)
 
 void* mib_queue_deque()
 {
-	return mib_queue_lfds_deque();
+	void* ret = mib_queue_lfds_deque();
+	if(ret == NULL) 	return ret;
+	send_verdict_cb( queue_num, *(uint32_t*)ret, 1);
+	return ret; 
 }
 
 size_t mib_queue_size()

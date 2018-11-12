@@ -27,8 +27,9 @@ void mib_queue_lfds_enqueu(void* data)
 void* mib_queue_lfds_deque()
 {
 	void *data;
-//	printf("into deque, number of elements %u \n",nb_elements);
-	lfds711_queue_bmm_dequeue( &qbmms, NULL, &data);
+  int ret =	lfds711_queue_bmm_dequeue( &qbmms, NULL, &data);
+	if(ret == 0) return NULL;
+
 	nb_elements--;
 	return data;
 }
@@ -37,8 +38,4 @@ size_t mib_queue_lfds_size()
 {
 	return nb_elements;
 }
-
-
-
-
 
