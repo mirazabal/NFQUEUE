@@ -15,14 +15,17 @@
 #include <linux/netfilter/nfnetlink.h>
     
 #include <linux/ip.h>
+#include <linux/tcp.h>
 #include <linux/types.h>
 #include <linux/netfilter/nfnetlink_queue.h>
-    
+
 #include <libnetfilter_queue/libnetfilter_queue.h>
     
 /* only for NFQA_CT, not needed otherwise: */
 #include <linux/netfilter/nfnetlink_conntrack.h>
     
+#define BUFFER_SIZE 256
+
 static struct mnl_socket *nl;
 static pthread_t thread_nfqueue;
 static void(*add_packet_sched_cb)(uint32_t,uint32_t,uint32_t);
@@ -67,7 +70,7 @@ void send_verdict_nfqueue(uint32_t queue_num, uint32_t id, uint32_t packetDecisi
 	}
 }
 
-
+/*
 static void print_ip_info(struct iphdr* ipHeader)
 {
 //	unsigned char* payloadData = (unsigned char*)mnl_attr_get_payload(attr[NFQA_PAYLOAD]);
@@ -80,21 +83,49 @@ static void print_ip_info(struct iphdr* ipHeader)
 	printf("The IP address destination = %s\n", ip_daddr);
 	printf("Total length %u \n", (unsigned int)ipHeader->tot_len);
 }
+*/
+
+static void add_ip_addr( struct iphdr* ipHeader, char* buffer)
+{
+		struct in_addr ip_addr;
+  
+		ip_addr.s_addr = ipHeader->saddr;
+		char* ip_saddr =  inet_ntoa(ip_addr);
+  
+		ip_addr.s_addr = ipHeader->daddr;
+		char* ip_daddr =  inet_ntoa(ip_addr);
+	
+		strncpy(buffer, ip_saddr, BUFFER_SIZE);
+		strncat(buffer, ip_daddr, 25);
+}
+
+
+static void add_tcp_ports( struct iphdr* ip_header, char* buffer)
+{
+	struct tcphdr* tcp_header= (struct tcphdr *)((__u32 *)ip_header+ ip_header->ihl); //this fixed the problem
+
+	unsigned int sport = htons((unsigned short int) tcp_header->source); //sport now has the source port
+	unsigned int dport = htons((unsigned short int) tcp_header->dest);   //dport now has the dest port
+
+  char str_s[25];
+  char str_d[25];
+
+	sprintf(str_s, "%u", sport);
+	sprintf(str_d, "%u", dport);
+
+	strncat(buffer, str_s, sizeof(str_s));
+	strncat(buffer, str_d, sizeof(str_d));
+}
 
 static uint32_t create_hash(struct iphdr* ipHeader)
 {
-	struct in_addr ip_addr;
-  
-	ip_addr.s_addr = ipHeader->saddr;
-	char* ip_saddr =  inet_ntoa(ip_addr);
-  
-	ip_addr.s_addr = ipHeader->daddr;
-	char* ip_daddr =  inet_ntoa(ip_addr);
-	
-	char buffer[256];
-	strncpy(buffer, ip_saddr, sizeof(buffer));
-	strncat(buffer, ip_daddr, sizeof(buffer));
+	char buffer[BUFFER_SIZE];
+	add_ip_addr(ipHeader,buffer);
 
+	if (ipHeader->protocol == IPPROTO_TCP){
+		add_tcp_ports(ipHeader,buffer);
+	}
+	//printf("Buffer before hashing = %s \n", buffer);
 	return jenkins_one_at_a_time_hash(buffer, strlen(buffer));
 }
 
@@ -111,15 +142,15 @@ static int queue_cb(const struct nlmsghdr *nlh, void *data)
 		return MNL_CB_ERROR;
 	}
 
-	uint16_t plen = mnl_attr_get_payload_len(attr[NFQA_PAYLOAD]);
+//	uint16_t plen = mnl_attr_get_payload_len(attr[NFQA_PAYLOAD]);
 
-	if (attr[NFQA_CAP_LEN]) {
-		uint32_t orig_len = ntohl(mnl_attr_get_u32(attr[NFQA_CAP_LEN]));
+//	if (attr[NFQA_CAP_LEN]) {
+	//	uint32_t orig_len = ntohl(mnl_attr_get_u32(attr[NFQA_CAP_LEN]));
 //		if (orig_len != plen)
 //			printf("truncated ");
-	}
+//	}
 
-	uint32_t skbinfo = attr[NFQA_SKB_INFO] ? ntohl(mnl_attr_get_u32(attr[NFQA_SKB_INFO])) : 0;
+//	uint32_t skbinfo = attr[NFQA_SKB_INFO] ? ntohl(mnl_attr_get_u32(attr[NFQA_SKB_INFO])) : 0;
 //	if (skbinfo & NFQA_SKB_GSO)
 //		printf("GSO ");
 
@@ -147,12 +178,7 @@ static int queue_cb(const struct nlmsghdr *nlh, void *data)
 	struct iphdr* ipHeader = (struct iphdr *)( mnl_attr_get_payload(attr[NFQA_PAYLOAD]));
 	//print_ip_info(ipHeader);
 	uint32_t hash = create_hash(ipHeader);
-	
-	if(ipHeader->protocol == IPPROTO_ICMP){
-		add_packet_sched_cb( ntohs(nfg->res_id), id, 0);
-	} else {
-		add_packet_sched_cb( ntohs(nfg->res_id), id, hash);
-	}
+	add_packet_sched_cb( ntohs(nfg->res_id), id, hash);
 	return MNL_CB_OK;
 }
 

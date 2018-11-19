@@ -14,14 +14,13 @@ static uint32_t drop_next_;// = 0;
 static uint32_t count_ ; //= 0;
 static uint32_t lastcount_; // = 0;
 static uint8_t	dropping_ ; //= false;
-static const uint32_t interval_  = 200000;// <>  TARGET =  MS2TIME(5);// 5ms TARGET queue delay
-static uint32_t const target_ = 10000;
+static const uint32_t interval_ = 2000000;// <>  TARGET =  MS2TIME(5);// 5ms TARGET queue delay
+static uint32_t const target_ = 20000;
 
 static const int queueNum = 0;
 static const int dropPacket = 0;
 
 static void (*send_verdict_cb)(uint32_t, uint32_t, uint32_t);
-
 
 struct PacketTimer
 {
@@ -135,7 +134,7 @@ void* mib_queue_codel_deque()
 		while (now >= drop_next_ && (dropping_ == 1)) {
 			drop_packet(); // free_sdu(listP, rlc_boP);
 			packets_dropped++;
-			printf(" dropping packet.. %d \n", packets_dropped );
+			printf(" dropping packet.. %lu \n", packets_dropped );
 			size_t queueSize = mib_queue_size();
 			if(queueSize == 0){
 				first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
@@ -159,7 +158,7 @@ void* mib_queue_codel_deque()
 	} else if (r.ok_to_drop == 1) {
 		drop_packet(); // free_sdu(listP, rlc_boP);
 		packets_dropped++;
-		printf(" dropping packet.. %d \n", packets_dropped );
+		printf(" dropping packet.. %lu \n", packets_dropped );
 		size_t queueSize = mib_queue_size();
 		if(queueSize == 0){
 			first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));

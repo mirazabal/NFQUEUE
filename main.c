@@ -1,9 +1,9 @@
 #include "nf-queue.h"
 #include "scheduler.h"
-
+#include <unistd.h>
 #include <stdio.h>
 #include <stddef.h>
-#include <pthread.h>
+#include <stdlib.h>
 
 int main(int argc, char *argv[])
 {
