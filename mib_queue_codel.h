@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "mib_queue.h"
 
 #define MAX_NUM_PACKETS 4096
 
@@ -14,15 +15,18 @@ struct PacketTimer
 	
 struct QueueCodel
 {
-  uint64_t packets_dropped = 0;
+  uint64_t packets_dropped; //= 0;
   struct PacketTimer pTimer;
   uint32_t first_above_time_; // = 0; //
   uint32_t drop_next_;// = 0;
   uint32_t count_ ; //= 0;
   uint32_t lastcount_; // = 0;
   uint8_t	dropping_ ; //= false;
-  static const uint32_t interval_  = 200000;// <>  TARGET =  MS2TIME(5);// 5ms TARGET queue delay
-  static uint32_t const target_ = 10000;
+
+	struct LockFreeQueue* q;
+
+  uint32_t interval_; // = 200000;// <>  TARGET =  MS2TIME(5);// 5ms TARGET queue delay
+  uint32_t target_; // = 10000;
 };
 
 void mib_queue_codel_init(struct QueueCodel*, void(*verdict)(uint32_t, uint32_t, uint32_t));

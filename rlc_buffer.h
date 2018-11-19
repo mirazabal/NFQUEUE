@@ -1,10 +1,14 @@
 #ifndef MIB_RLC_BUFFER
 #define MIB_RLC_BUFFER
 
+#define RLC_BUFFER_SIZE 1024
+#include <stdint.h>
+
 struct RLCBuffer
 {
-  uint32_t buffer[1024];
-  uint32_t bufferPos;
+  uint32_t* buffer[RLC_BUFFER_SIZE];
+  uint32_t it_first;
+  uint32_t it_last;
 };
 
 void initRLCBuffer(struct RLCBuffer* rlcB);

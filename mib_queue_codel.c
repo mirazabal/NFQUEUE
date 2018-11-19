@@ -40,11 +40,16 @@ static void init_codel_params(struct QueueCodel* queue)
   queue->lastcount_ = 0;
   queue->dropping_ = 0; // {false}
   queue->pTimer.pos = 0;
+
+	queue->q = malloc(sizeof(struct LockFreeQueue*));
+
+  queue->interval_ = 200000;
+  queue->target_ =  10000;
 }
 
-static int64_t control_law(int64_t t, uint32_t count)
+static int64_t control_law(struct QueueCodel* queue, int64_t t, uint32_t count)
 {
-  double temp =  (double)interval_ / sqrt( (double)count );
+  double temp =  (double)queue->interval_ / sqrt( (double)count );
   return t +  (int64_t)temp;
 }
 
@@ -56,13 +61,13 @@ struct dodequeue_result
 
 static struct dodequeue_result dodequeue(struct QueueCodel* queue, int64_t now)
 {
-  void* p = mib_queue_deque(queue);
+  void* p = mib_queue_deque(queue->q);
   if(p == NULL){
     struct dodequeue_result ret = { .m = p, .ok_to_drop = 0};
     return ret;
   }
 
-  int64_t sojourn_time = now - queue->pTimer.usecs[pTimer.pos-1];
+  int64_t sojourn_time = now - queue->pTimer.usecs[queue->pTimer.pos-1];
   if (sojourn_time < queue->target_ ){ //|| bytes() <= maxpacket_) 
     // went below - stay below for at least INTERVAL
     queue->first_above_time_ = 0; // time_stamp(std::chrono::microseconds(0));
@@ -88,19 +93,19 @@ void mib_queue_codel_init(struct QueueCodel* queue, void(*verdict)(uint32_t, uin
 {
   init_codel_params(queue);
   send_verdict_cb = verdict;
-  mib_queue_init(queue,verdict);
+  mib_queue_init(queue->q/*,verdict*/);
 }
 
 static void drop_packet(struct QueueCodel* queue)
 {
-  void* data = mib_queue_deque(queue);
+  void* data = mib_queue_deque(queue->q);
   if(data == NULL) return;
 
   send_verdict_cb( queueNum, *(uint32_t*)data, dropPacket);
   free(data);
   queue->packets_dropped++;
-  printf(" dropping packet.. %d \n", queue->packets_dropped );
-  queue->pTimer.pos = pTimer.pos - 1;
+  printf(" dropping packet.. %lu \n", queue->packets_dropped );
+  queue->pTimer.pos = queue->pTimer.pos - 1;
 }
 
 
@@ -117,7 +122,7 @@ void* mib_queue_codel_deque(struct QueueCodel* queue)
     while (now >= queue->drop_next_ && (queue->dropping_ == 1)) {
       drop_packet(queue); // free_sdu(listP, rlc_boP);
   
-      if(mib_queue_size(queue) == 0){
+      if(mib_queue_size(queue->q) == 0){
         queue->first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
         return NULL;
       }
@@ -131,14 +136,14 @@ void* mib_queue_codel_deque(struct QueueCodel* queue)
         // leave drop state
         queue->dropping_ = 0;// false;
       } else {
-        ++count_;
+        ++queue->count_;
         // schedule the next drop.
-        queue->drop_next_ = control_law(drop_next_, count_);
+        queue->drop_next_ = control_law(queue, queue->drop_next_, queue->count_);
       }
     }
   } else if (r.ok_to_drop == 1) {
     drop_packet(queue); // free_sdu(listP, rlc_boP);
-    if(mib_queue_size(queue) == 0){
+    if(mib_queue_size(queue->q) == 0){
       queue->first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
       return NULL;
     }
@@ -152,7 +157,7 @@ void* mib_queue_codel_deque(struct QueueCodel* queue)
     queue->count_ = 1;
     if ((delta > 1) && (now - queue->drop_next_ < 16*queue->interval_))
       queue->count_ = delta;
-    queue->drop_next_ = control_law(now, queue->count_);
+    queue->drop_next_ = control_law(queue,now, queue->count_);
     queue->lastcount_ = queue->count_;
   }
   queue->pTimer.pos = queue->pTimer.pos - 1;
@@ -161,18 +166,18 @@ void* mib_queue_codel_deque(struct QueueCodel* queue)
 
 void mib_queue_codel_enqueu(struct QueueCodel* queue, void* data)
 {
-  mib_queue_enqueu(queue,data);
-  queue->pTimer.usecs[pTimer.pos] = get_time_us();
+  mib_queue_enqueu(queue->q,data);
+  queue->pTimer.usecs[queue->pTimer.pos] = get_time_us();
   queue->pTimer.pos = queue->pTimer.pos + 1;
 }
 
 size_t mib_queue_codel_size(struct QueueCodel* queue)
 {
-  return mib_queue_size(queue);
+  return mib_queue_size(queue->q);
 }
 
 void mib_queue_codel_free(struct QueueCodel* queue)
 {
-  mib_queue_free(queue);
+  mib_queue_free(queue->q);
 }
 
