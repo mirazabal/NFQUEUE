@@ -1,35 +1,33 @@
 #include "mib_queue.h"
-#include "mib_queue_lfds_impl.h"
 #include <stdint.h>
 #include <stdio.h>
 
 static int const queue_num = 0;
 
-void mib_queue_init(void (*cb_)(uint32_t, uint32_t, uint32_t))
+void mib_queue_init(struct LockFreeQueue* q)
 {
-	//send_verdict_cb = cb_;
-	mib_queue_lfds_init();
+    mib_queue_lfds_init(q->q);
 }
 
-void mib_queue_enqueu(void* data)
+void mib_queue_enqueu(struct LockFreeQueue* q,void* data)
 {
-	mib_queue_lfds_enqueu(data);
+  mib_queue_lfds_enqueu(q->q,data);
 }
 
-void* mib_queue_deque()
+void* mib_queue_deque(struct LockFreeQueue* q)
 {
-	void* ret = mib_queue_lfds_deque();
-	if(ret == NULL) 	return ret;
-	return ret; 
+  void* ret = mib_queue_lfds_deque(q->q);
+  if(ret == NULL) 	return ret;
+  return ret; 
 }
 
-size_t mib_queue_size()
+size_t mib_queue_size(struct LockFreeQueue* q)
 {
-	return  mib_queue_lfds_size();
+  return  mib_queue_lfds_size(q->q);
 }
 
-void mib_queue_free()
+void mib_queue_free(struct LockFreeQueue* q)
 {
-	mib_queue_lfds_free();
+  mib_queue_lfds_free(q->q);
 }
 

@@ -1,41 +1,35 @@
-#include "liblfds7.1.1/liblfds711/inc/liblfds711.h"
 #include "mib_queue_lfds_impl.h"
 #include <stdio.h>
 
-static size_t nb_elements = 0;
-static struct lfds711_queue_bmm_element qbmme[512]; // TRD : must be a positive integer power of 2 (2, 4, 8, 16, etc)
-static struct lfds711_queue_bmm_state qbmms;
-
-void mib_queue_lfds_init()
+void mib_queue_lfds_init(struct QueueLFDS* q)
 {
-	lfds711_queue_bmm_init_valid_on_current_logical_core( &qbmms, qbmme, 512, NULL );
+	lfds711_queue_bmm_init_valid_on_current_logical_core( &q->qbmms, q->qbmme, 512, NULL );
 }
 
-void mib_queue_lfds_free()
+void mib_queue_lfds_free(struct QueueLFDS* q)
 {
-	lfds711_queue_bmm_cleanup( &qbmms, NULL );
+	lfds711_queue_bmm_cleanup( &q->qbmms, NULL );
 }
 
-void mib_queue_lfds_enqueu(void* data)
+void mib_queue_lfds_enqueu(struct QueueLFDS* q, void* data)
 {
 //	printf("into enqueu with data value = %u \n",*(unsigned int*)(data)  );
-	lfds711_queue_bmm_enqueue( &qbmms, NULL, data);
-//	printf("after enqueu \n");
-	nb_elements++;
+	lfds711_queue_bmm_enqueue( &q->qbmms, NULL, data);
+	q->nb_elements++;
 }
 
-void* mib_queue_lfds_deque()
+void* mib_queue_lfds_deque(struct QueueLFDS* q)
 {
 	void *data;
-  int ret =	lfds711_queue_bmm_dequeue( &qbmms, NULL, &data);
+  int ret =	lfds711_queue_bmm_dequeue( &q->qbmms, NULL, &data);
 	if(ret == 0) return NULL;
 
-	nb_elements--;
+	q->nb_elements--;
 	return data;
 }
 
-size_t mib_queue_lfds_size()
+size_t mib_queue_lfds_size(struct QueueLFDS* q)
 {
-	return nb_elements;
+	return q->nb_elements;
 }
 

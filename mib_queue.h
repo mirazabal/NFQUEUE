@@ -2,12 +2,20 @@
 #define MIB_QUEUE
 #include <stdint.h>
 #include <stddef.h>
+#include "mib_queue_lfds_impl.h"
 
-void mib_queue_init(void(*verdict)(uint32_t, uint32_t, uint32_t) );
-void mib_queue_free();
-void mib_queue_enqueu(void* data);
-void* mib_queue_deque();
-size_t mib_queue_size();
+struct LockFreeQueue
+{
+  struct QueueLFDS* q;
+};
+
+
+
+void mib_queue_init(struct LockFreeQueue*);
+void mib_queue_free(struct LockFreeQueue*);
+void mib_queue_enqueu(struct LockFreeQueue, void* data);
+void* mib_queue_deque(LockFreeQueue* );
+size_t mib_queue_size(LockFreeQueue* );
 
 #endif
 

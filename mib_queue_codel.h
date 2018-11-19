@@ -4,12 +4,33 @@
 #include <stddef.h>
 #include <stdint.h>
 
-void mib_queue_codel_init( void(*verdict)(uint32_t, uint32_t, uint32_t));
+#define MAX_NUM_PACKETS 4096
 
-void mib_queue_codel_free();
-void mib_queue_codel_enqueu(void* data);
-void* mib_queue_codel_deque();
-size_t mib_queue_codel_size();
+struct PacketTimer
+{
+  int64_t usecs[MAX_NUM_PACKETS];
+  uint64_t pos;
+};
+	
+struct QueueCodel
+{
+  uint64_t packets_dropped = 0;
+  struct PacketTimer pTimer;
+  uint32_t first_above_time_; // = 0; //
+  uint32_t drop_next_;// = 0;
+  uint32_t count_ ; //= 0;
+  uint32_t lastcount_; // = 0;
+  uint8_t	dropping_ ; //= false;
+  static const uint32_t interval_  = 200000;// <>  TARGET =  MS2TIME(5);// 5ms TARGET queue delay
+  static uint32_t const target_ = 10000;
+};
+
+void mib_queue_codel_init(struct QueueCodel*, void(*verdict)(uint32_t, uint32_t, uint32_t));
+
+void mib_queue_codel_free(struct QueueCodel* );
+void mib_queue_codel_enqueu(struct QueueCodel*,void* data);
+void* mib_queue_codel_deque(struct QueueCodel*);
+size_t mib_queue_codel_size(struct QueueCodel*);
 
 #endif
 
