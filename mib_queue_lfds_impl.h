@@ -1,6 +1,7 @@
 #ifndef MIB_QUEUE_LFDS_IMPL
 #define MIB_QUEUE_LFDS_IMPL
 
+#include <assert.h>
 #include <stddef.h>
 #include "liblfds7.1.1/liblfds711/inc/liblfds711.h"
 

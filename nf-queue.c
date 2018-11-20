@@ -119,6 +119,11 @@ static void add_tcp_ports( struct iphdr* ip_header, char* buffer)
 
 static uint32_t create_hash(struct iphdr* ipHeader)
 {
+	if (ipHeader->protocol == IPPROTO_ICMP){
+		printf("ICMP packet detected... \n");
+		return 0;
+	}
+
 	char buffer[BUFFER_SIZE];
 	add_ip_addr(ipHeader,buffer);
 

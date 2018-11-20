@@ -5,30 +5,37 @@
 #include "mib_queue.h"
 #include "mib_queue_codel.h"
 #include "rlc_buffer.h"
+#include "mib_priority_queue.h"
 #include <unistd.h>
 
 #define NUM_QUEUES 1024
 
+static int init_vars = 0;
 static int const queue_num = 0;
 static int endThread = 1;
 static pthread_t thread_fill_RLC_Buffer;
 static pthread_t thread_MAC_sched;
 static const int forwardPacket = 1;
 
-static struct QueueCodel* queues[1024];
-static struct QueueCodel* priorityQueue;
 static struct RLCBuffer* rlcB;
+static const int maxNumberPacketsRLC = 100; 
 
-static const int maxNumberPacketsRLC; 
+static int priorityArr[NUM_QUEUES];  
+static int maxNumPackArr[NUM_QUEUES];
+static struct QueueCodel* queues[NUM_QUEUES];
 
 static void (*send_verdict_cb)(uint32_t, uint32_t, uint32_t);
 
 static void init_queues(void(*verdict)(uint32_t, uint32_t, uint32_t))
 {
-  mib_queue_codel_init(priorityQueue, verdict);
   for(uint32_t i = 0; i < NUM_QUEUES; ++i){
-    mib_queue_codel_init(queues[i], verdict); 
+   	queues[i] = malloc(sizeof(struct QueueCodel));
+	 	mib_queue_codel_init(queues[i], verdict); 
+		priorityArr[i] = 1;  
+		maxNumPackArr[i] = 10;
   }
+	priorityArr[0] = 11;  
+	init_vars = 1;
 }
 
 static void init_rlc_buffer()
@@ -38,20 +45,69 @@ static void init_rlc_buffer()
 }
 
 // decide from which queue to take the next packet
-static uint32_t* getPacketFromQueues()
+static uint32_t* getPacketFromQueues(struct PriorityQueue* pq)
 {
+	if(mib_priority_queue_size(pq) == 0)
+		return NULL;
 
-	return 0;
+	struct PriorityQueueProp* prop = mib_priority_queue_top(pq);
+	printf("Priority of the prop == %u \n", prop->priority);
+	uint32_t* ret = mib_queue_codel_deque(queues[prop->queuePos]);
+	while(ret == NULL){ // the number may not reflect actual status in the queue, since LFDS
+		mib_priority_queue_pop(pq);
+		if(mib_priority_queue_size(pq) == 0)
+			return NULL;
+
+		prop = mib_priority_queue_top(pq);
+		ret = mib_queue_codel_deque(queues[prop->queuePos]);
+	}
+
+	prop->maxNumPackets--;
+	if(prop->maxNumPackets == 0){
+		mib_priority_queue_pop(pq);
+	}
+
+	//printf("Into getpacket from queues with ret == %lu", *ret);
+	return ret;
+}
+
+static struct PriorityQueue generatePriorityQueue()
+{
+	struct PriorityQueue pq;
+	mib_priority_queue_init(&pq);
+	for(int32_t i = 0; i < NUM_QUEUES; ++i){
+		if(mib_queue_codel_size(queues[i]) > 0){
+			struct PriorityQueueProp prop;
+			prop.queuePos = i;
+			//printf("Position of the queue == %d \n",i);
+			prop.priority = priorityArr[i];  
+			prop.maxNumPackets = maxNumPackArr[i];
+			mib_priority_queue_push(&pq,prop);
+		}
+	}
+	return pq;
 }
 
 static void* func_fill_RLC_Buffer(void* notUsed)
 {
+	uint32_t* buff[10];
+	int8_t pos = 0;
 	while(endThread){
-		usleep(2000);
-		if(getRLCBufferStatus(rlcB) <= maxNumberPacketsRLC ) continue;
+		usleep(1000);
+		if(getRLCBufferStatus(rlcB) >= maxNumberPacketsRLC ) continue;
+	
+		struct PriorityQueue pq = generatePriorityQueue();
 
-		uint32_t* packet = getPacketFromQueues();
-		addPacketToRLCBuffer(rlcB,packet);
+	//	printf("after generate priority queues %d \n", mib_priority_queue_size(&pq)); //  push(&pq,prop);
+		for(pos = -1; pos < 10; ++pos){
+			uint32_t* packet = getPacketFromQueues(&pq);
+			if(packet == NULL) break;
+			buff[pos+1] = packet;
+		}
+		while(pos > -1){
+			addPacketToRLCBuffer(rlcB, buff[pos]);
+			--pos;
+		}
 	}
 	return NULL;
 }
@@ -62,16 +118,18 @@ static void* func_MAC_sched(void *notUsed)
 		usleep(10000);
 		sched_yield();
 
-		// loop throug the list of active queues taking into account the 
+	// loop throug the list of active queues taking into account the 
 		uint32_t queueSize = getRLCBufferStatus(rlcB);
-		printf("tcp_size = %d\n", queueSize ); 
+		//printf("RLC queue size = %d\n", queueSize ); 
 		uint32_t counter = 0;
+		
 		while( (counter < 10) && queueSize != 0){
 
 			uint32_t* idP = getRLCPacket(rlcB);	
 			if(idP == NULL)
 				break;
 
+			printf("Packet deque %lu \n",*idP);
 			send_verdict_cb(queue_num, *(uint32_t*)idP,forwardPacket);
 			free(idP);	
 			++counter;
@@ -105,10 +163,18 @@ void add_packet_sched(uint32_t queue, uint32_t id, uint32_t hash)
 	if(queue != queue_num)
 		printf("Errro assigning the queue, just queue 0 working!!! \n");
 
+	if(init_vars == 0)
+	 	return;
+
 	uint32_t* idP = malloc(sizeof(uint32_t));
 	*idP = id;
-	uint32_t arrPos = hash % NUM_QUEUES;
+	printf("Packet enqueed %lu \n",*idP);
+	uint32_t arrPos = 0;
+	if(hash != 0){
+		arrPos = hash % 64;// 128;
+		if(arrPos ==0)
+		 	++arrPos;
+	}
 	mib_queue_codel_enqueu(queues[arrPos],idP);
-	//mib_queue_enqueu(idP);
 }
 

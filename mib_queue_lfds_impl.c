@@ -3,6 +3,7 @@
 
 void mib_queue_lfds_init(struct QueueLFDS* q)
 {
+	assert(q != NULL);
 	lfds711_queue_bmm_init_valid_on_current_logical_core( &q->qbmms, q->qbmme, 512, NULL );
 }
 
@@ -14,17 +15,21 @@ void mib_queue_lfds_free(struct QueueLFDS* q)
 void mib_queue_lfds_enqueu(struct QueueLFDS* q, void* data)
 {
 //	printf("into enqueu with data value = %u \n",*(unsigned int*)(data)  );
-	lfds711_queue_bmm_enqueue( &q->qbmms, NULL, data);
-	q->nb_elements++;
+	int ret = lfds711_queue_bmm_enqueue( &q->qbmms, NULL, data);
+	if(ret == 1)
+	 	q->nb_elements++;
 }
 
 void* mib_queue_lfds_deque(struct QueueLFDS* q)
 {
 	void *data;
-  int ret =	lfds711_queue_bmm_dequeue( &q->qbmms, NULL, &data);
-	if(ret == 0) return NULL;
-
-	q->nb_elements--;
+  int ret =	lfds711_queue_bmm_dequeue(&q->qbmms, NULL, &data);
+	if(ret == 0){
+		q->nb_elements = 0; // this is a big big lie... rethink tyhe race condition!
+		return NULL;
+	}
+	if(q->nb_elements != 0)
+		q->nb_elements--;
 	return data;
 }
 

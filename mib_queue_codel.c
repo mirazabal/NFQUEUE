@@ -40,8 +40,8 @@ static void init_codel_params(struct QueueCodel* queue)
   queue->lastcount_ = 0;
   queue->dropping_ = 0; // {false}
   queue->pTimer.pos = 0;
-
-	queue->q = malloc(sizeof(struct LockFreeQueue*));
+	queue->q = malloc(sizeof(struct LockFreeQueue));
+  mib_queue_init(queue->q/*,verdict*/);
 
   queue->interval_ = 200000;
   queue->target_ =  10000;
@@ -93,7 +93,6 @@ void mib_queue_codel_init(struct QueueCodel* queue, void(*verdict)(uint32_t, uin
 {
   init_codel_params(queue);
   send_verdict_cb = verdict;
-  mib_queue_init(queue->q/*,verdict*/);
 }
 
 static void drop_packet(struct QueueCodel* queue)
@@ -113,6 +112,11 @@ void* mib_queue_codel_deque(struct QueueCodel* queue)
 {
   int64_t now = get_time_us();
   struct dodequeue_result r = dodequeue(queue,now);
+ 	if(r.m == NULL){
+    queue->first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
+    return NULL;
+  }
+
   if (queue->dropping_ == 1) {
     if ( r.ok_to_drop == 0) { //false
       // sojourn time below TARGET - leave drop state
@@ -127,11 +131,11 @@ void* mib_queue_codel_deque(struct QueueCodel* queue)
         return NULL;
       }
       r = dodequeue(queue,now);
-      /*	if(r.m == NULL){
-                first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
-                return NULL;
-                }
-                */
+     	if(r.m == NULL){
+         queue->first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
+         return NULL;
+       }
+                
       if (r.ok_to_drop == 0 || r.m == NULL) { //false
         // leave drop state
         queue->dropping_ = 0;// false;
@@ -148,10 +152,10 @@ void* mib_queue_codel_deque(struct QueueCodel* queue)
       return NULL;
     }
     r = dodequeue(queue,now);
-    /*	if(r.m == NULL){
-        first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
+    if(r.m == NULL){
+        queue->first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
         return NULL;
-        }*/
+    }
     queue->dropping_ = 1;// true;
     uint32_t delta = queue->count_ - queue->lastcount_;
     queue->count_ = 1;

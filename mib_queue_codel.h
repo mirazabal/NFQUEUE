@@ -10,7 +10,7 @@
 struct PacketTimer
 {
   int64_t usecs[MAX_NUM_PACKETS];
-  uint64_t pos;
+  int64_t pos;
 };
 	
 struct QueueCodel

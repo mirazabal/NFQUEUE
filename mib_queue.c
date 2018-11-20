@@ -1,12 +1,15 @@
 #include "mib_queue.h"
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+
 
 static int const queue_num = 0;
 
 void mib_queue_init(struct LockFreeQueue* q)
 {
-    mib_queue_lfds_init(q->q);
+	q->q = malloc(sizeof(struct QueueLFDS));
+  mib_queue_lfds_init(q->q);
 }
 
 void mib_queue_enqueu(struct LockFreeQueue* q,void* data)
