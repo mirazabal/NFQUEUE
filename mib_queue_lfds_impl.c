@@ -17,19 +17,19 @@ void mib_queue_lfds_enqueu(struct QueueLFDS* q, void* data)
 //	printf("into enqueu with data value = %u \n",*(unsigned int*)(data)  );
 	int ret = lfds711_queue_bmm_enqueue( &q->qbmms, NULL, data);
 	if(ret == 1)
-	 	q->nb_elements++;
+		atomic_fetch_add_explicit(&q->nb_elements, 1, memory_order_relaxed); 	
+	 
 }
 
 void* mib_queue_lfds_deque(struct QueueLFDS* q)
 {
 	void *data;
   int ret =	lfds711_queue_bmm_dequeue(&q->qbmms, NULL, &data);
-	if(ret == 0){
-		q->nb_elements = 0; // this is a big big lie... rethink tyhe race condition!
+	if(ret == 0)
 		return NULL;
-	}
+
 	if(q->nb_elements != 0)
-		q->nb_elements--;
+		atomic_fetch_sub_explicit(&q->nb_elements, 1, memory_order_relaxed); 	
 	return data;
 }
 

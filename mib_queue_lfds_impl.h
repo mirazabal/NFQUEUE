@@ -3,11 +3,15 @@
 
 #include <assert.h>
 #include <stddef.h>
+#include <stdatomic.h>
+
 #include "liblfds7.1.1/liblfds711/inc/liblfds711.h"
+
+
 
 struct QueueLFDS
 {
-  size_t nb_elements; //= 0;
+  _Atomic int nb_elements; //= 0;
   struct lfds711_queue_bmm_element qbmme[512]; // TRD : must be a positive integer power of 2 (2, 4, 8, 16, etc)
   struct lfds711_queue_bmm_state qbmms;
 };

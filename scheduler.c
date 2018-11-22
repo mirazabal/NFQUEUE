@@ -4,7 +4,7 @@
 #include "scheduler.h"
 #include "mib_queue.h"
 #include "mib_queue_codel.h"
-#include "rlc_buffer.h"
+#include "qfi_buffer.h"
 #include "mib_priority_queue.h"
 #include <unistd.h>
 
@@ -13,12 +13,12 @@
 static int init_vars = 0;
 static int const queue_num = 0;
 static int endThread = 1;
-static pthread_t thread_fill_RLC_Buffer;
-static pthread_t thread_MAC_sched;
+static pthread_t pthread_UPF_sched;
+static pthread_t pthread_SDAP_sched;
 static const int forwardPacket = 1;
 
-static struct RLCBuffer* rlcB;
-static const int maxNumberPacketsRLC = 100; 
+static struct QFIBuffer* qfiB;
+static const int maxNumberPacketsQFI = 100; 
 
 static int priorityArr[NUM_QUEUES];  
 static int maxNumPackArr[NUM_QUEUES];
@@ -34,14 +34,14 @@ static void init_queues(void(*verdict)(uint32_t, uint32_t, uint32_t))
 		priorityArr[i] = 1;  
 		maxNumPackArr[i] = 10;
   }
-	priorityArr[0] = 11;  
+	priorityArr[0] = 100;  
 	init_vars = 1;
 }
 
-static void init_rlc_buffer()
+static void init_qfi_buffer()
 {
-	rlcB = malloc(sizeof(struct RLCBuffer));
-	initRLCBuffer(rlcB);
+	qfiB = malloc(sizeof(struct QFIBuffer));
+	initQFIBuffer(qfiB);
 }
 
 // decide from which queue to take the next packet
@@ -88,13 +88,13 @@ static struct PriorityQueue generatePriorityQueue()
 	return pq;
 }
 
-static void* func_fill_RLC_Buffer(void* notUsed)
+static void* thread_UPF_sched(void* notUsed)
 {
 	uint32_t* buff[10];
 	int8_t pos = 0;
 	while(endThread){
 		usleep(1000);
-		if(getRLCBufferStatus(rlcB) >= maxNumberPacketsRLC ) continue;
+		if(getQFIBufferStatus(qfiB) >= maxNumberPacketsQFI ) continue;
 	
 		struct PriorityQueue pq = generatePriorityQueue();
 
@@ -105,27 +105,27 @@ static void* func_fill_RLC_Buffer(void* notUsed)
 			buff[pos+1] = packet;
 		}
 		while(pos > -1){
-			addPacketToRLCBuffer(rlcB, buff[pos]);
+			addPacketToQFIBuffer(qfiB, buff[pos]);
 			--pos;
 		}
 	}
 	return NULL;
 }
 
-static void* func_MAC_sched(void *notUsed)
+static void* thread_SDAP_sched(void *notUsed)
 {
 	while(endThread){
 		usleep(10000);
 		sched_yield();
 
 	// loop throug the list of active queues taking into account the 
-		uint32_t queueSize = getRLCBufferStatus(rlcB);
+		uint32_t queueSize = getQFIBufferStatus(qfiB);
 		//printf("RLC queue size = %d\n", queueSize ); 
 		uint32_t counter = 0;
 		
 		while( (counter < 10) && queueSize != 0){
 
-			uint32_t* idP = getRLCPacket(rlcB);	
+			uint32_t* idP = getQFIPacket(qfiB);	
 			if(idP == NULL)
 				break;
 
@@ -143,18 +143,18 @@ void init_sched( void(*verdict)(uint32_t, uint32_t, uint32_t))
 {
 	send_verdict_cb = verdict;
   init_queues(verdict);
-	init_rlc_buffer();
-	pthread_create(&thread_fill_RLC_Buffer , NULL, func_MAC_sched, NULL );
-	pthread_create(&thread_MAC_sched, NULL, func_fill_RLC_Buffer, NULL );
+	init_qfi_buffer();
+	pthread_create(&pthread_SDAP_sched , NULL, thread_SDAP_sched, NULL );
+	pthread_create(&pthread_UPF_sched, NULL, thread_UPF_sched, NULL );
 }
 
 void close_sched()
 {
 	endThread = 0;
 	void* ret = NULL;
-	if(pthread_join(thread_MAC_sched, &ret))
+	if(pthread_join(pthread_SDAP_sched, &ret))
 		printf("Error joining the thread \n");
-	if(pthread_join(thread_fill_RLC_Buffer, &ret))
+	if(pthread_join(pthread_UPF_sched, &ret))
 		printf("Error joining the thread \n");
 }
 
