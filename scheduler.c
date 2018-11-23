@@ -6,6 +6,7 @@
 #include "mib_queue_codel.h"
 #include "qfi_buffer.h"
 #include "mib_priority_queue.h"
+#include "mib_time.h"
 #include <unistd.h>
 
 #define NUM_QUEUES 1024
@@ -18,11 +19,13 @@ static pthread_t pthread_SDAP_sched;
 static const int forwardPacket = 1;
 
 static struct QFIBuffer* qfiB;
-static const int maxNumberPacketsQFI = 100; 
+static const int maxNumberPacketsQFI = 50; 
 
 static int priorityArr[NUM_QUEUES];  
 static int maxNumPackArr[NUM_QUEUES];
-static struct QueueCodel* queues[NUM_QUEUES];
+//static struct QueueCodel* queues[NUM_QUEUES];
+static struct LockFreeQueue* queues[NUM_QUEUES];
+
 
 static void (*send_verdict_cb)(uint32_t, uint32_t, uint32_t);
 
@@ -30,7 +33,8 @@ static void init_queues(void(*verdict)(uint32_t, uint32_t, uint32_t))
 {
   for(uint32_t i = 0; i < NUM_QUEUES; ++i){
    	queues[i] = malloc(sizeof(struct QueueCodel));
-	 	mib_queue_codel_init(queues[i], verdict); 
+	 	//mib_queue_codel_init(queues[i], verdict); 
+	 	mib_queue_init(queues[i]); 
 		priorityArr[i] = 1;  
 		maxNumPackArr[i] = 10;
   }
@@ -51,15 +55,15 @@ static uint32_t* getPacketFromQueues(struct PriorityQueue* pq)
 		return NULL;
 
 	struct PriorityQueueProp* prop = mib_priority_queue_top(pq);
-	printf("Priority of the prop == %u \n", prop->priority);
-	uint32_t* ret = mib_queue_codel_deque(queues[prop->queuePos]);
+//	printf("Priority of the prop == %u \n", prop->priority);
+	uint32_t* ret = mib_queue_deque(queues[prop->queuePos]);
 	while(ret == NULL){ // the number may not reflect actual status in the queue, since LFDS
 		mib_priority_queue_pop(pq);
 		if(mib_priority_queue_size(pq) == 0)
 			return NULL;
 
 		prop = mib_priority_queue_top(pq);
-		ret = mib_queue_codel_deque(queues[prop->queuePos]);
+		ret = mib_queue_deque(queues[prop->queuePos]);
 	}
 
 	prop->maxNumPackets--;
@@ -76,7 +80,9 @@ static struct PriorityQueue generatePriorityQueue()
 	struct PriorityQueue pq;
 	mib_priority_queue_init(&pq);
 	for(int32_t i = 0; i < NUM_QUEUES; ++i){
-		if(mib_queue_codel_size(queues[i]) > 0){
+		if(mib_queue_size(queues[i]) > 0){
+
+			printf("UPF queue %d with size %lu , at timestamp = %ld \n", i, mib_queue_size(queues[i]), mib_get_time_us() ); 
 			struct PriorityQueueProp prop;
 			prop.queuePos = i;
 			//printf("Position of the queue == %d \n",i);
@@ -98,7 +104,7 @@ static void* thread_UPF_sched(void* notUsed)
 	
 		struct PriorityQueue pq = generatePriorityQueue();
 
-	//	printf("after generate priority queues %d \n", mib_priority_queue_size(&pq)); //  push(&pq,prop);
+//		printf("after generate priority queues %d \n", mib_priority_queue_size(&pq)); //  push(&pq,prop);
 		for(pos = -1; pos < 10; ++pos){
 			uint32_t* packet = getPacketFromQueues(&pq);
 			if(packet == NULL) break;
@@ -120,7 +126,7 @@ static void* thread_SDAP_sched(void *notUsed)
 
 	// loop throug the list of active queues taking into account the 
 		uint32_t queueSize = getQFIBufferStatus(qfiB);
-		//printf("RLC queue size = %d\n", queueSize ); 
+		printf("QFI queue size = %d at timestamp = %ld \n", queueSize , mib_get_time_us() ); 
 		uint32_t counter = 0;
 		
 		while( (counter < 10) && queueSize != 0){
@@ -129,7 +135,7 @@ static void* thread_SDAP_sched(void *notUsed)
 			if(idP == NULL)
 				break;
 
-			printf("Packet deque %lu \n",*idP);
+			//printf("Packet deque %lu \n",*idP);
 			send_verdict_cb(queue_num, *(uint32_t*)idP,forwardPacket);
 			free(idP);	
 			++counter;
@@ -168,13 +174,15 @@ void add_packet_sched(uint32_t queue, uint32_t id, uint32_t hash)
 
 	uint32_t* idP = malloc(sizeof(uint32_t));
 	*idP = id;
-	printf("Packet enqueed %lu \n",*idP);
+	//printf("Packet enqueed %lu \n",*idP);
 	uint32_t arrPos = 0;
+
 	if(hash != 0){
 		arrPos = hash % 64;// 128;
 		if(arrPos ==0)
 		 	++arrPos;
 	}
-	mib_queue_codel_enqueu(queues[arrPos],idP);
+	//	printf("queue size before enqueuing = %lu \n", mib_queue_size(queues[arrPos]));
+	mib_queue_enqueu(queues[arrPos],idP);
 }
 

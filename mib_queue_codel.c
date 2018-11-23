@@ -1,36 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <time.h>
 #include "mib_queue_codel.h"
 #include "mib_queue.h"
+#include "mib_time.h"
 
 static const int queueNum = 0;
 static const int dropPacket = 0;
 
 static void (*send_verdict_cb)(uint32_t, uint32_t, uint32_t);
-
-static int64_t get_time_us(void)
-{
-  struct timespec tms;
-
-  /* The C11 way */
-  /* if (! timespec_get(&tms, TIME_UTC))  */
-
-  /* POSIX.1-2008 way */
-  if (clock_gettime(CLOCK_REALTIME,&tms)) {
-    return -1;
-  }
-  /* seconds, multiplied with 1 million */
-  int64_t micros = tms.tv_sec * 1000000;
-  /* Add full microseconds */
-  micros += tms.tv_nsec/1000;
-  /* round up if necessary */
-  if (tms.tv_nsec % 1000 >= 500) {
-    ++micros;
-  }
-  return micros;
-}
 
 static void init_codel_params(struct QueueCodel* queue)
 {
@@ -80,7 +58,7 @@ static struct dodequeue_result dodequeue(struct QueueCodel* queue, int64_t now)
     // first_above_time, will say it’s ok to drop.
     queue->first_above_time_ = now + queue->interval_; // INTERVAL;
   } else if((now >= queue->first_above_time_) ){
-    printf("Sojourn time = %lld \n", (long long)sojourn_time);
+    //printf("Sojourn time = %lld \n", (long long)sojourn_time);
     struct dodequeue_result ret = { .m = p, .ok_to_drop = 1};
     return ret;
     //return {&p, true}; // ok_to_drop = true;
@@ -110,7 +88,7 @@ static void drop_packet(struct QueueCodel* queue)
 
 void* mib_queue_codel_deque(struct QueueCodel* queue)
 {
-  int64_t now = get_time_us();
+  int64_t now = mib_get_time_us();
   struct dodequeue_result r = dodequeue(queue,now);
  	if(r.m == NULL){
     queue->first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
@@ -171,7 +149,7 @@ void* mib_queue_codel_deque(struct QueueCodel* queue)
 void mib_queue_codel_enqueu(struct QueueCodel* queue, void* data)
 {
   mib_queue_enqueu(queue->q,data);
-  queue->pTimer.usecs[queue->pTimer.pos] = get_time_us();
+  queue->pTimer.usecs[queue->pTimer.pos] = mib_get_time_us();
   queue->pTimer.pos = queue->pTimer.pos + 1;
 }
 
