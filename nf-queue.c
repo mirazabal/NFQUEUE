@@ -32,42 +32,42 @@ static void(*add_packet_sched_cb)(uint32_t,uint32_t,uint32_t);
 
 static struct nlmsghdr* nfq_hdr_put(char *buf, int type, uint32_t queue_num)
 {
-	struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
-	nlh->nlmsg_type = (NFNL_SUBSYS_QUEUE << 8) | type;
-	nlh->nlmsg_flags = NLM_F_REQUEST;
+  struct nlmsghdr *nlh = mnl_nlmsg_put_header(buf);
+  nlh->nlmsg_type = (NFNL_SUBSYS_QUEUE << 8) | type;
+  nlh->nlmsg_flags = NLM_F_REQUEST;
 
-	struct nfgenmsg *nfg = mnl_nlmsg_put_extra_header(nlh, sizeof(*nfg));
-	nfg->nfgen_family = AF_UNSPEC;
-	nfg->version = NFNETLINK_V0;
-	nfg->res_id = htons(queue_num);
+  struct nfgenmsg *nfg = mnl_nlmsg_put_extra_header(nlh, sizeof(*nfg));
+  nfg->nfgen_family = AF_UNSPEC;
+  nfg->version = NFNETLINK_V0;
+  nfg->res_id = htons(queue_num);
 
-	return nlh;
+  return nlh;
 }
     
 void send_verdict_nfqueue(uint32_t queue_num, uint32_t id, uint32_t packetDecision)
 {
-	char buf[MNL_SOCKET_BUFFER_SIZE];
-	struct nlmsghdr *nlh;
-	struct nlattr *nest;
+  char buf[MNL_SOCKET_BUFFER_SIZE];
+  struct nlmsghdr *nlh;
+  struct nlattr *nest;
 
-	nlh = nfq_hdr_put(buf, NFQNL_MSG_VERDICT, queue_num);
-	//nfq_nlmsg_verdict_put(nlh, id, NF_ACCEPT);
-	nfq_nlmsg_verdict_put(nlh, id, packetDecision);
+  nlh = nfq_hdr_put(buf, NFQNL_MSG_VERDICT, queue_num);
+  //nfq_nlmsg_verdict_put(nlh, id, NF_ACCEPT);
+  nfq_nlmsg_verdict_put(nlh, id, packetDecision);
 
-	/* example to set the connmark. First, start NFQA_CT section: */
-	nest = mnl_attr_nest_start(nlh, NFQA_CT);
+  /* example to set the connmark. First, start NFQA_CT section: */
+  nest = mnl_attr_nest_start(nlh, NFQA_CT);
 
-	/* then, add the connmark attribute: */
-	mnl_attr_put_u32(nlh, CTA_MARK, htonl(42));
-	/* more conntrack attributes, e.g. CTA_LABEL, could be set here */
+  /* then, add the connmark attribute: */
+  mnl_attr_put_u32(nlh, CTA_MARK, htonl(42));
+  /* more conntrack attributes, e.g. CTA_LABEL, could be set here */
 
-	/* end conntrack section */
-	mnl_attr_nest_end(nlh, nest);
+  /* end conntrack section */
+  mnl_attr_nest_end(nlh, nest);
 
-	if (mnl_socket_sendto(nl, nlh, nlh->nlmsg_len) < 0) {
-		perror("mnl_socket_send");
-		exit(EXIT_FAILURE);
-	}
+  if (mnl_socket_sendto(nl, nlh, nlh->nlmsg_len) < 0) {
+    perror("mnl_socket_send");
+    exit(EXIT_FAILURE);
+  }
 }
 
 /*
@@ -87,16 +87,16 @@ static void print_ip_info(struct iphdr* ipHeader)
 
 static void add_ip_addr( struct iphdr* ipHeader, char* buffer)
 {
-		struct in_addr ip_addr;
-  
-		ip_addr.s_addr = ipHeader->saddr;
-		char* ip_saddr =  inet_ntoa(ip_addr);
-  
-		ip_addr.s_addr = ipHeader->daddr;
-		char* ip_daddr =  inet_ntoa(ip_addr);
-	
-		strncpy(buffer, ip_saddr, BUFFER_SIZE);
-		strncat(buffer, ip_daddr, 25);
+  struct in_addr ip_addr;
+
+  ip_addr.s_addr = ipHeader->saddr;
+  char* ip_saddr =  inet_ntoa(ip_addr);
+
+  ip_addr.s_addr = ipHeader->daddr;
+  char* ip_daddr =  inet_ntoa(ip_addr);
+
+  strncpy(buffer, ip_saddr, BUFFER_SIZE);
+  strncat(buffer, ip_daddr, 25);
 }
 
 
@@ -119,19 +119,19 @@ static void add_tcp_ports( struct iphdr* ip_header, char* buffer)
 
 static uint32_t create_hash(struct iphdr* ipHeader)
 {
-	if (ipHeader->protocol == IPPROTO_ICMP){
-//		printf("ICMP packet detected... \n");
-		return 0;
-	}
+  if (ipHeader->protocol == IPPROTO_ICMP){
+    printf("ICMP packet detected... \n");
+    return 0;
+  }
 
-	char buffer[BUFFER_SIZE];
-	add_ip_addr(ipHeader,buffer);
+  char buffer[BUFFER_SIZE];
+  add_ip_addr(ipHeader,buffer);
 
-	if (ipHeader->protocol == IPPROTO_TCP){
-		add_tcp_ports(ipHeader,buffer);
-	}
-	//printf("Buffer before hashing = %s \n", buffer);
-	return jenkins_one_at_a_time_hash(buffer, strlen(buffer));
+  if (ipHeader->protocol == IPPROTO_TCP){
+    add_tcp_ports(ipHeader,buffer);
+  }
+  //printf("Buffer before hashing = %s \n", buffer);
+  return jenkins_one_at_a_time_hash(buffer, strlen(buffer));
 }
 
 static int queue_cb(const struct nlmsghdr *nlh, void *data)

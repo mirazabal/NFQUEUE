@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "mib_queue.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -26,6 +27,9 @@ void* mib_queue_deque(struct LockFreeQueue* q)
 
 size_t mib_queue_size(struct LockFreeQueue* q)
 {
+  assert(q != NULL);
+  assert(q->q != NULL);
+
   return  mib_queue_lfds_size(q->q);
 }
 

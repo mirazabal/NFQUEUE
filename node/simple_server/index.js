@@ -16,7 +16,7 @@ app.get('/', function (req, res, next) {
     }
   };
 
-  var fileName = 'hallo.txt';// req.params.name;
+  var fileName = 'ubuntu-16.04.3-desktop-amd64.iso';// req.params.name;
   res.sendFile(fileName, options, function (err) {
     if (err) {
       next(err);
