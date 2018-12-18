@@ -10,7 +10,7 @@
 
 #define NUM_QUEUES 1024
 
-static const int maxNumberPacketsQFI = 50; 
+static const int maxNumberPacketsQFI = 1024; 
 static int priorityArr[NUM_QUEUES];  
 static int maxNumPackArr[NUM_QUEUES];
 static int endThread = 1;
@@ -44,11 +44,23 @@ static struct PriorityQueue generatePriorityQueue(struct UPF_queues* upfQ)
   return pq;
 }
 
-// decide from which queue to take the next packet
-static uint32_t* getPacketFromUPF(struct UPF_queues* upfQ, struct PriorityQueue* pq)
+
+struct PacketAndQueuPos
 {
+	uint32_t* packet;
+	uint8_t queuePos;
+};
+
+// decide from which queue to take the next packet
+static struct PacketAndQueuPos getPacketFromUPF(struct UPF_queues* upfQ, struct PriorityQueue* pq)
+{
+	
+	struct PacketAndQueuPos p;
+	p.packet = NULL;
+	p.queuePos = 0;
+
   if(mib_priority_queue_size(pq) == 0)
-    return NULL;
+    return p;
 
   struct PriorityQueueProp* prop = mib_priority_queue_top(pq);
   //	printf("Priority of the prop == %u \n", prop->priority);
@@ -56,7 +68,7 @@ static uint32_t* getPacketFromUPF(struct UPF_queues* upfQ, struct PriorityQueue*
   while(ret == NULL){ // the number may not reflect actual status in the queue, since LFDS
     mib_priority_queue_pop(pq);
     if(mib_priority_queue_size(pq) == 0)
-      return NULL;
+      return p;
 
     prop = mib_priority_queue_top(pq);
     ret = mib_queue_deque(upfQ->queues[prop->queuePos]);
@@ -68,7 +80,9 @@ static uint32_t* getPacketFromUPF(struct UPF_queues* upfQ, struct PriorityQueue*
   }
 
   //printf("Into getpacket from queues with ret == %lu", *ret);
-  return ret;
+	p.packet = ret;
+	p.queuePos = prop->queuePos;
+  return p;
 }
 
 void close_UPF_thread()
@@ -80,32 +94,27 @@ void* thread_UPF_sched(void* threadData)
 {
   struct UPF_thread_data* data = (struct UPF_thread_data*)threadData;
 
-  init_priority_max_quantity(data);
+  init_priority_max_quantity(data->upfQ);
 
-  uint32_t* buff[10];
   int8_t pos = 0;
-  const uint8_t QUEUE_QFI = 0;
-  assert(data->qfiQ->queues[QUEUE_QFI] != NULL);
-  assert(data->upfQ->queues[QUEUE_QFI] != NULL);
+//  const uint8_t QUEUE_QFI = 0;
+//  assert(data->qfiQ->queues[QUEUE_QFI] != NULL);
+//  assert(data->upfQ->queues[QUEUE_QFI] != NULL);
 
   while(endThread){
     usleep(1000);
-    if(getQFIBufferStatus(data->qfiQ, QUEUE_QFI) >= maxNumberPacketsQFI )
-      continue;
+//   if(getQFIBufferStatus(data->qfiQ, QUEUE_QFI) >= maxNumberPacketsQFI )
+//      continue;
 
     struct PriorityQueue pq = generatePriorityQueue(data->upfQ);
 
-    //printf("after generate priority queues %d \n", mib_priority_queue_size(&pq)); //  push(&pq,prop);
-    for(pos = -1; pos < 10; ++pos){
-      uint32_t* packet = getPacketFromUPF(data->upfQ, &pq);
-      if(packet == NULL) break;
-      buff[pos+1] = packet;
+    for(pos = 0; pos < 10; ++pos){
+			struct PacketAndQueuPos p = getPacketFromUPF(data->upfQ, &pq);
+      if(p.packet == NULL) break;
+		
+      addPacketToQFI(data->qfiQ, p.queuePos, p.packet); 
     }
-    while(pos > -1){
-      addPacketToQFI(data->qfiQ, QUEUE_QFI, buff[pos]); // this is stupid!!!
-      --pos;
-    }
-  }
+   }
   return NULL;
 }
 

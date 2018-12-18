@@ -5,10 +5,12 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "mib_queue_codel.h"
 
 struct DRB_queues
 {
   struct LockFreeQueue* queues[DRB_NUM_QUEUES];
+//  struct  QueueCodel* queues[DRB_NUM_QUEUES];
   uint8_t sizeQueue;
 };
 

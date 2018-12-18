@@ -21,8 +21,8 @@ static void init_codel_params(struct QueueCodel* queue)
 	queue->q = malloc(sizeof(struct LockFreeQueue));
   mib_queue_init(queue->q/*,verdict*/);
 
-  queue->interval_ = 200000;
-  queue->target_ =  10000;
+  queue->interval_ = 100000;
+  queue->target_ =  5000;
 }
 
 static int64_t control_law(struct QueueCodel* queue, int64_t t, uint32_t count)
@@ -81,7 +81,7 @@ static void drop_packet(struct QueueCodel* queue)
   send_verdict_cb( queueNum, *(uint32_t*)data, dropPacket);
   free(data);
   queue->packets_dropped++;
-  printf(" dropping packet.. %lu \n", queue->packets_dropped );
+  printf(" dropping packet.. %lu at timestamp %lu \n", queue->packets_dropped , mib_get_time_us()  );
   queue->pTimer.pos = queue->pTimer.pos - 1;
 }
 

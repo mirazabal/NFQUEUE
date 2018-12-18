@@ -6,6 +6,7 @@
 void init_DRB_queues(struct DRB_queues* drbQ, void(*verdict)(uint32_t, uint32_t, uint32_t))
 {
   for(uint8_t i = 0; i < DRB_NUM_QUEUES; i++){
+ //   drbQ->queues[i] = malloc(sizeof(struct QueueCodel));
     drbQ->queues[i] = malloc(sizeof(struct LockFreeQueue));
     mib_queue_init(drbQ->queues[i]);
   }  
