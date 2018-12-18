@@ -12,7 +12,14 @@ static const int forwardPacket = 1;
 static int endThread = 1;
 static const int maxNumberPacketsDRB = 1024; 
 static int arrActiveQueues[QFI_NUM_QUEUES];
-static uint32_t* packetsSelected[10];
+
+struct packetAndQueue
+{
+	uint32_t* packet;
+	uint32_t queueIdx; 
+};
+
+static struct packetAndQueue packetsSelected[10];
 
 static void getActiveQFIQueues(struct QFI_queues* qfiQ)
 {
@@ -34,7 +41,7 @@ static void getActiveQFIQueues(struct QFI_queues* qfiQ)
 static void selectQFIPacket(struct QFI_queues* qfiQ)
 {
 	for(int i =0 ; i < 10; ++i){
-	 packetsSelected[i] = NULL;
+	 packetsSelected[i].packet = NULL;
 	}
  	int packetsAlreadySelected = 0;
 	int noPacketDetected = 1;
@@ -53,7 +60,8 @@ static void selectQFIPacket(struct QFI_queues* qfiQ)
  			uint32_t* p = getQFIPacket(qfiQ, queueIdx);	
 			printf("QFI queue = %d size = %d at timestamp = %ld \n", queueIdx, queueSize , mib_get_time_us() ); 
 
-			packetsSelected[packetsAlreadySelected] = p;
+			packetsSelected[packetsAlreadySelected].packet = p;
+			packetsSelected[packetsAlreadySelected].queueIdx = queueIdx;
 			++packetsAlreadySelected; 
 		}
 	}
@@ -80,8 +88,8 @@ void* thread_SDAP_sched(void *threadData)
 		selectQFIPacket(data->qfiQ);
 		for(int i = 0; i < 10; ++i)
 		{
-			if(packetsSelected[i] == NULL) break;
-				addPacketToDRB(data->drbQ, DRB_QUEUE_IDX, packetsSelected[i]);
+			if(packetsSelected[i].packet == NULL) break;
+				addPacketToDRB(data->drbQ, (packetsSelected[i].queueIdx) % DRB_NUM_QUEUES, packetsSelected[i].packet);
 		}
 	}
 	return NULL;
