@@ -7,13 +7,25 @@
 #include "mib_queue_codel.h"
 #include "mib_qfi_queues.h"
 #include "mib_upf_queues.h"
-
-#define NUM_QUEUES 1024
+#include "mapper.h"
 
 static const int maxNumberPacketsQFI = 1024; 
-static int priorityArr[NUM_QUEUES];  
-static int maxNumPackArr[NUM_QUEUES];
+static int priorityArr[UPF_NUM_QUEUES];  
+static int maxNumPackArr[UPF_NUM_QUEUES];
 static int endThread = 1;
+
+
+static void init_mapper(struct mib_mapper* map)
+{
+	mib_init_mapper(map, UPF_NUM_QUEUES, QFI_NUM_QUEUES);	
+	for(int i = 0; i < UPF_NUM_QUEUES; ++i){
+		if(i < QFI_NUM_QUEUES){
+			mib_set_output_for_input(map, i, i);
+		}else{
+			mib_set_output_for_input(map, i,  QFI_NUM_QUEUES - 1);
+		}
+	}	
+}
 
 static void init_priority_max_quantity(struct UPF_queues* upfQ)
 {
@@ -92,29 +104,27 @@ void close_UPF_thread()
 
 void* thread_UPF_sched(void* threadData)
 {
-  struct UPF_thread_data* data = (struct UPF_thread_data*)threadData;
+	struct UPF_thread_data* data = (struct UPF_thread_data*)threadData;
 
-  init_priority_max_quantity(data->upfQ);
+	init_priority_max_quantity(data->upfQ);
+	struct mib_mapper map;
+	init_mapper(&map);
 
-  int8_t pos = 0;
-//  const uint8_t QUEUE_QFI = 0;
-//  assert(data->qfiQ->queues[QUEUE_QFI] != NULL);
-//  assert(data->upfQ->queues[QUEUE_QFI] != NULL);
+	while(endThread){
+		usleep(1000);
+		//   if(getQFIBufferStatus(data->qfiQ, QUEUE_QFI) >= maxNumberPacketsQFI )
+		//      continue;
 
-  while(endThread){
-    usleep(1000);
-//   if(getQFIBufferStatus(data->qfiQ, QUEUE_QFI) >= maxNumberPacketsQFI )
-//      continue;
+		struct PriorityQueue pq = generatePriorityQueue(data->upfQ);
 
-    struct PriorityQueue pq = generatePriorityQueue(data->upfQ);
-
-    for(pos = 0; pos < 10; ++pos){
+		for(int8_t pos = 0; pos < 10; ++pos){
 			struct PacketAndQueuPos p = getPacketFromUPF(data->upfQ, &pq);
-      if(p.packet == NULL) break;
-		
-      addPacketToQFI(data->qfiQ, p.queuePos, p.packet); 
-    }
-   }
-  return NULL;
+			if(p.packet == NULL) break;
+
+			addPacketToQFI(data->qfiQ, p.queuePos, p.packet); 
+		}
+	}
+	free_mapper(&map);
+	return NULL;
 }
 
