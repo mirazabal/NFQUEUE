@@ -1,11 +1,11 @@
 #ifndef MIB_DRB_QUEUES
 #define MIB_DRB_QUEUES
 
-#define DRB_NUM_QUEUES 11
-
 #include <stddef.h>
 #include <stdint.h>
 #include "mib_queue_codel.h"
+
+#define DRB_NUM_QUEUES 11
 
 struct DRB_queues
 {

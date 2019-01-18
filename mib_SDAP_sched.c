@@ -58,8 +58,9 @@ static void selectQFIPacket(struct QFI_queues* qfiQ)
 			}
 			noPacketDetected = 1;
  			uint32_t* p = getQFIPacket(qfiQ, queueIdx);	
-			printf("QFI queue = %d size = %d at timestamp = %ld \n", queueIdx, queueSize , mib_get_time_us() ); 
-
+    	printf("QFI queue idx = %d with size = %d at timestamp = %ld \n", queueIdx, queueSize, mib_get_time_us()); 
+    	if(queueIdx != 0)
+				printf("QFI queue idx = 0 with size = %ld at timestamp = %ld \n",  getQFIBufferStatus(qfiQ, 0), mib_get_time_us()); 
 			packetsSelected[packetsAlreadySelected].packet = p;
 			packetsSelected[packetsAlreadySelected].queueIdx = queueIdx;
 			++packetsAlreadySelected; 
@@ -89,7 +90,8 @@ void* thread_SDAP_sched(void *threadData)
 		for(int i = 0; i < 10; ++i)
 		{
 			if(packetsSelected[i].packet == NULL) break;
-				addPacketToDRB(data->drbQ, (packetsSelected[i].queueIdx) % DRB_NUM_QUEUES, packetsSelected[i].packet);
+			//	addPacketToDRB(data->drbQ, (packetsSelected[i].queueIdx) % DRB_NUM_QUEUES, packetsSelected[i].packet);
+				addPacketToDRB(data->drbQ, DRB_QUEUE_IDX, packetsSelected[i].packet);
 		}
 	}
 	return NULL;

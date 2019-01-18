@@ -21,8 +21,8 @@ static void init_codel_params(struct QueueCodel* queue)
 	queue->q = malloc(sizeof(struct LockFreeQueue));
   mib_queue_init(queue->q/*,verdict*/);
 
-  queue->interval_ = 100000;
-  queue->target_ =  5000;
+  queue->interval_ = 600000;
+  queue->target_ =  30000;
 }
 
 static int64_t control_law(struct QueueCodel* queue, int64_t t, uint32_t count)

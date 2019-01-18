@@ -11,17 +11,13 @@
 static const int forwardPacket = 1;
 static int endThread = 1;
 
-static int arrActiveQueues[DRB_NUM_QUEUES];
-
 struct packetAndQueue
 {
 	uint32_t* packet;
 	uint32_t queueIdx; 
 };
 
-static struct packetAndQueue packetsSelected[10];
-
-static void getActiveDRBQueues(struct DRB_queues* drbQ)
+static void getActiveDRBQueues(struct DRB_queues* drbQ, int* arrActiveQueues)
 {
 	for(int i = 0; i < DRB_NUM_QUEUES; ++i)
 	{
@@ -31,6 +27,7 @@ static void getActiveDRBQueues(struct DRB_queues* drbQ)
 	for(int queueIdx = 0; queueIdx < DRB_NUM_QUEUES; ++queueIdx )
 	{
 		uint32_t queueSize = getDRBBufferStatus(drbQ, queueIdx);
+
 		if(queueSize == 0) continue;
 
 	 	arrActiveQueues[idx] = queueIdx;
@@ -38,16 +35,16 @@ static void getActiveDRBQueues(struct DRB_queues* drbQ)
 	}
 }
 
-static void selectDRBPacket(struct DRB_queues* drbQ)
+static void selectDRBPacket(struct DRB_queues* drbQ,  struct packetAndQueue* packetsSelected, uint8_t numPacketsPerTick, int* arrActiveQueues)
 {
-	for(int i =0 ; i < 10; ++i){
+	for(int i =0 ; i < numPacketsPerTick; ++i){
 	 packetsSelected[i].packet = NULL;
 	}
 
  	int packetsAlreadySelected = 0;
-	int noPacketDetected = 1;
-	while(packetsAlreadySelected < 10 && noPacketDetected == 1){
-		noPacketDetected = 0;
+	int packetDetected = 1;
+	while(packetsAlreadySelected < numPacketsPerTick && packetDetected == 1){
+			packetDetected = 0;
 		for(int i = 0; i < DRB_NUM_QUEUES; ++i)
 		{
 			if(arrActiveQueues[i] == -1) continue;
@@ -57,7 +54,7 @@ static void selectDRBPacket(struct DRB_queues* drbQ)
 				arrActiveQueues[i] = -1;
 				continue;
 			}
-			noPacketDetected = 1;
+			packetDetected = 1;
  			uint32_t* p = getDRBPacket(drbQ, queueIdx);	
 //			printf("QFI queue = %d size = %d at timestamp = %ld \n", queueIdx, queueSize , mib_get_time_us() ); 
 
@@ -69,6 +66,16 @@ static void selectDRBPacket(struct DRB_queues* drbQ)
 	}
 }
 
+struct packetAndQueue* init_num_packets_process(uint8_t numPackets)
+{
+  struct packetAndQueue* packetsSelected = malloc(sizeof(struct packetAndQueue)*numPackets);
+	return packetsSelected;
+}
+
+void close_num_packets_process( struct packetAndQueue* packetsSelected)
+{
+	free(packetsSelected);
+}
 
 void close_MAC_thread()
 {
@@ -78,52 +85,26 @@ void close_MAC_thread()
 void* thread_MAC_sched(void* threadData)
 {
   struct MAC_thread_data* data = (struct MAC_thread_data*)threadData;   
+	const uint8_t numPacketsPerTick = 10;
+  struct packetAndQueue* packetsPerTick = init_num_packets_process(numPacketsPerTick);
+
+	int arrActiveQueues[DRB_NUM_QUEUES];
 
 	while(endThread){
 		usleep(10000);
     sched_yield();
 
-	//	uint32_t queueSize = getDRBBufferStatus(data->drbQ, QUEUE_DRB);
-  //  printf("DRB queue size = %d at timestamp = %ld \n", queueSize , mib_get_time_us() ); 
-		
-	//	if(getDRBBufferStatus(data->drbQ, DRB_QUEUE_IDX) >= maxNumberPacketsDRB)
-	//			continue;
-
-		getActiveDRBQueues(data->drbQ);
-		selectDRBPacket(data->drbQ);
-		for(int i = 0; i < 10; ++i)
+		getActiveDRBQueues(data->drbQ,arrActiveQueues);
+		selectDRBPacket(data->drbQ,packetsPerTick, numPacketsPerTick,arrActiveQueues);
+		for(int i = 0; i < numPacketsPerTick; ++i)
 		{
-			if(packetsSelected[i].packet == NULL) break;
+			if(packetsPerTick[i].packet == NULL) break;
 
-      data->send_verdict_cb(data->NFQUEUE_NUM, *packetsSelected[i].packet,forwardPacket);
-      free(packetsSelected[i].packet);	
+      data->send_verdict_cb(data->NFQUEUE_NUM, *packetsPerTick[i].packet,forwardPacket);
+      free(packetsPerTick[i].packet);	
 		}
 	}
-
-/*
-//  uint8_t QUEUE_DRB = 0;
-  while(endThread){
-    usleep(10000);
-    sched_yield();
-
-    // loop throug the list of active queues taking into account the 
-    uint32_t queueSize = getDRBBufferStatus(data->drbQ, QUEUE_DRB);
-    printf("DRB queue size = %d at timestamp = %ld \n", queueSize , mib_get_time_us() ); 
-    uint32_t counter = 0;
-    while((counter < 10) && queueSize != 0){
-
-      uint32_t* idP = getDRBPacket(data->drbQ,QUEUE_DRB);	
-      if(idP == NULL)
-        break;
-
-      data->send_verdict_cb(data->NFQUEUE_NUM, *(uint32_t*)idP,forwardPacket);
-      free(idP);	
-      ++counter;
-      --queueSize;
-    }
-  }
-	*/
+ close_num_packets_process(packetsPerTick);
   return NULL;
-
 }
 

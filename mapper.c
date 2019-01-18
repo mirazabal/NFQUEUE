@@ -16,7 +16,7 @@ void mib_set_output_for_input(struct mib_mapper* map, uint32_t inputIdx, uint32_
 	map->inputs[inputIdx] = outputIdx;
 }
 
-uint32_t get_ouput_for_input(struct mib_mapper* map, uint32_t inputIdx)
+uint32_t mib_get_ouput_for_input(struct mib_mapper* map, uint32_t inputIdx)
 {
 	assert(map->sizeInputs > inputIdx);
 	return map->inputs[inputIdx];

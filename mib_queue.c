@@ -21,7 +21,6 @@ void mib_queue_enqueu(struct LockFreeQueue* q,void* data)
 void* mib_queue_deque(struct LockFreeQueue* q)
 {
   void* ret = mib_queue_lfds_deque(q->q);
-  if(ret == NULL) 	return ret;
   return ret; 
 }
 

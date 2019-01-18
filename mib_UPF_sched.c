@@ -20,7 +20,8 @@ static void init_mapper(struct mib_mapper* map)
 	mib_init_mapper(map, UPF_NUM_QUEUES, QFI_NUM_QUEUES);	
 	for(int i = 0; i < UPF_NUM_QUEUES; ++i){
 		if(i < QFI_NUM_QUEUES){
-			mib_set_output_for_input(map, i, i);
+//			mib_set_output_for_input(map, i, i);
+			mib_set_output_for_input(map, i, 0);
 		}else{
 			mib_set_output_for_input(map, i,  QFI_NUM_QUEUES - 1);
 		}
@@ -41,15 +42,16 @@ static struct PriorityQueue generatePriorityQueue(struct UPF_queues* upfQ)
   struct PriorityQueue pq;
   mib_priority_queue_init(&pq);
 
-  for(int32_t i = 0; i < upfQ->sizeQueue; ++i){
-
-    if(mib_queue_size(upfQ->queues[i]) > 0){
-      printf("UPF queue %d with size %lu , at timestamp = %ld \n", i, mib_queue_size(upfQ->queues[i]), mib_get_time_us() ); 
+  for(int32_t  queueIdx = 0; queueIdx < upfQ->sizeQueue; ++queueIdx){
+		uint32_t queueSize =  mib_queue_size(upfQ->queues[queueIdx]); 
+//		uint32_t queueSize =  mib_queue_size(upfQ->queues[queueIdx]); 
+    if(queueSize > 0){
+    	printf("UPF queue idx = %d with size = %d at timestamp = %ld \n", queueIdx,queueSize , mib_get_time_us() ); 
+    	printf("UPF queue idx = 0 with size = %ld at timestamp = %ld \n", mib_queue_size(upfQ->queues[0]) , mib_get_time_us() ); 
       struct PriorityQueueProp prop;
-      prop.queuePos = i;
-      //printf("Position of the queue == %d \n",i);
-      prop.priority = priorityArr[i];  
-      prop.maxNumPackets = maxNumPackArr[i];
+      prop.queuePos = queueIdx;
+      prop.priority = priorityArr[queueIdx];  
+      prop.maxNumPackets = maxNumPackArr[queueIdx];
       mib_priority_queue_push(&pq,prop);
     }
   }
@@ -120,11 +122,11 @@ void* thread_UPF_sched(void* threadData)
 		for(int8_t pos = 0; pos < 10; ++pos){
 			struct PacketAndQueuPos p = getPacketFromUPF(data->upfQ, &pq);
 			if(p.packet == NULL) break;
-
-			addPacketToQFI(data->qfiQ, p.queuePos, p.packet); 
+			uint8_t qfiIdx = mib_get_ouput_for_input(&map, p.queuePos);
+			addPacketToQFI(data->qfiQ, qfiIdx, p.packet); 
 		}
 	}
-	free_mapper(&map);
+	mib_free_mapper(&map);
 	return NULL;
 }
 
