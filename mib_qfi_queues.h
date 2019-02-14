@@ -4,12 +4,12 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define QFI_NUM_QUEUES 64
+#define QFI_NUM_QUEUES 8
 
 struct QFI_queues
 {
- struct QueueCodel* queues[QFI_NUM_QUEUES];
 // struct LockFreeQueue* queues[QFI_NUM_QUEUES];
+ struct QueueCodel* queues[QFI_NUM_QUEUES];
 };
 
 void init_QFI_queues(struct QFI_queues* qfiQ, void(*verdict)(uint32_t, uint32_t, uint32_t));

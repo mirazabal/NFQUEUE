@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "mib_qfi_queues.h"
 #include "mib_queue.h"
 #include "mib_queue_codel.h"
@@ -26,6 +27,7 @@ void addPacketToQFI(struct QFI_queues* qfiQ, uint8_t queueIdx, uint32_t* idP)
 {
   assert(qfiQ != NULL);
   assert(queueIdx < QFI_NUM_QUEUES);
+//	printf("Packet added to qfi index = %ld", queueIdx);
   mib_queue_codel_enqueu(qfiQ->queues[queueIdx],idP);
 }
 

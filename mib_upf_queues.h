@@ -8,8 +8,8 @@
 
 struct UPF_queues
 {
-// struct QueueCodel* queues[UPF_NUM_QUEUES];
   struct LockFreeQueue* queues[UPF_NUM_QUEUES];
+// struct QueueCodel* queues[UPF_NUM_QUEUES];
   uint8_t sizeQueue;
 };
 

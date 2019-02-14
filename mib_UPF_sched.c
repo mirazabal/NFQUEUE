@@ -14,14 +14,13 @@ static int priorityArr[UPF_NUM_QUEUES];
 static int maxNumPackArr[UPF_NUM_QUEUES];
 static int endThread = 1;
 
-
 static void init_mapper(struct mib_mapper* map)
 {
 	mib_init_mapper(map, UPF_NUM_QUEUES, QFI_NUM_QUEUES);	
 	for(int i = 0; i < UPF_NUM_QUEUES; ++i){
 		if(i < QFI_NUM_QUEUES){
-//			mib_set_output_for_input(map, i, i);
-			mib_set_output_for_input(map, i, 0);
+			mib_set_output_for_input(map, i, i);
+//			mib_set_output_for_input(map, i, 0);
 		}else{
 			mib_set_output_for_input(map, i,  QFI_NUM_QUEUES - 1);
 		}
