@@ -12,7 +12,7 @@
 
 static const int forwardPacket = 1;
 static int endThread = 1;
-static const int maxNumberPacketsDRB = 30; 
+static const int maxNumberPacketsDRB =30; 
 static int arrActiveQueues[QFI_NUM_QUEUES];
 
 
@@ -74,7 +74,6 @@ void* thread_SDAP_sched(void *threadData)
 	struct SDAP_thread_data* data = (struct SDAP_thread_data*)threadData;
 
 	struct packetAndQueue dequePackets[NUM_PACKETS_PER_TICK];
-//	const uint8_t QUEUE_QFI = 0;
 	const uint8_t DRB_QUEUE_IDX = 0;
 	while(endThread){
 		usleep(1000);
@@ -84,13 +83,9 @@ void* thread_SDAP_sched(void *threadData)
 
 		uint8_t actQueues = getActiveQFIQueues(data->qfiQ);
 		uint32_t numPackets =  maxNumberPacketsDRB - packetsAtDRB < NUM_PACKETS_PER_TICK + 1 ? maxNumberPacketsDRB - packetsAtDRB : NUM_PACKETS_PER_TICK;
-//		selectQFIPacket(data->qfiQ, numPackets, actQueues);
-
 		uint8_t numPacSel = selectQFIPacket(data->qfiQ, actQueues, dequePackets, numPackets);
 		for(int i = 0; i < numPacSel; ++i)
 		{
-//			if(packetsSelected[i].packet == NULL) break;
-			//	addPacketToDRB(data->drbQ, (packetsSelected[i].queueIdx) % DRB_NUM_QUEUES, packetsSelected[i].packet);
 				addPacketToDRB(data->drbQ, DRB_QUEUE_IDX, dequePackets[i].packet);
 		}
 	}
