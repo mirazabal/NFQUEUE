@@ -1,9 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
 #include "mib_queue_codel.h"
 #include "mib_queue.h"
 #include "mib_time.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
 static const int queueNum = 0;
 static const int dropPacket = 0;

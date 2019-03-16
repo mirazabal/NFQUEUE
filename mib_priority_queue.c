@@ -1,6 +1,5 @@
 #include "mib_priority_queue.h"
 
-
 static void mib_priority_queue_swap(struct PriorityQueue* p, size_t a, size_t b)
 {
 	struct PriorityQueueProp temp = p->buffer[a];
@@ -35,7 +34,6 @@ void mib_priority_queue_init(struct PriorityQueue* p)
 {
 	p->bufferPos = 0;
 }
-
 
 size_t mib_priority_queue_size(struct PriorityQueue* p)
 {

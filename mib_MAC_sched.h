@@ -1,5 +1,6 @@
 #ifndef MIB_MAC_SCHED
 #define MIB_MAC_SCHED
+
 #include <stdint.h>
 
 struct MAC_thread_data

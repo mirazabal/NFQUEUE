@@ -1,8 +1,10 @@
 #ifndef MIB_QUEUE
 #define MIB_QUEUE
+
+#include "mib_queue_lfds_impl.h"
+
 #include <stdint.h>
 #include <stddef.h>
-#include "mib_queue_lfds_impl.h"
 
 struct LockFreeQueue
 {

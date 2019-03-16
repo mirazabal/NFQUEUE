@@ -1,5 +1,6 @@
 #ifndef MIB_SDAP_SCHED_H
 #define MIB_SDAP_SCHED_H
+
 #include <stdint.h>
 
 struct SDAP_thread_data

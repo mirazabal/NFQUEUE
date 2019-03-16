@@ -1,6 +1,3 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
 #include "mib_UPF_sched.h"
 #include "mib_priority_queue.h"
 #include "mib_time.h"
@@ -9,11 +6,13 @@
 #include "mib_upf_queues.h"
 #include "mapper.h"
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
 #define UPF_NUM_PACKETS_PER_TICK 10
 
 static int endThread = 1;
 static const int maxNumberPacketsQFI = 1024; 
-//static int arrActiveQueues[UPF_NUM_QUEUES];
 
 static void init_mapper(struct mib_mapper* map)
 {
@@ -32,13 +31,6 @@ static void init_mapper(struct mib_mapper* map)
 		}
 	}	
 }
-/*
-struct PacketAndQueuPos
-{
-	uint32_t* packet;
-	uint8_t queuePos;
-};
-*/
 
 void close_UPF_thread()
 {
@@ -58,7 +50,6 @@ static inline void reset_active_queues(int* arrActiveQueues)
 		 arrActiveQueues[i] = -1;
 	}
 }
-
 
 static uint8_t getActiveUPFQueues(struct UPF_queues* upfQ, int* arrActiveQueues)
 {
@@ -82,7 +73,6 @@ static inline void printUPFStatus(struct UPF_queues* upfQ, uint8_t numActiveQueu
 		printf("UPF queue idx = %d with size = %d at timestamp = %ld \n", queueIdx, queueSize, mib_get_time_us()); 
 	}
 }
-
 
 static uint8_t selectUPFPacket(struct UPF_queues* upfQ, uint8_t numActiveQueues, struct packetAndQueue* packetsSelected, uint8_t numberPackets, int* arrActiveQueues)
 {

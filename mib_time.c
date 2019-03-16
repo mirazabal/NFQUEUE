@@ -1,5 +1,6 @@
-#include <time.h>
 #include "mib_time.h"
+
+#include <time.h>
 
 int64_t mib_get_time_us(void)
 {

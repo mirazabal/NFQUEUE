@@ -1,9 +1,10 @@
 #ifndef MIB_QUEUE_CODEL
 #define MIB_QUEUE_CODEL
 
+#include "mib_queue.h"
+
 #include <stddef.h>
 #include <stdint.h>
-#include "mib_queue.h"
 
 #define MAX_NUM_PACKETS 4096
 

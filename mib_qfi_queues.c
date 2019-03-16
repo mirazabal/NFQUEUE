@@ -1,9 +1,10 @@
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include "mib_qfi_queues.h"
 #include "mib_queue.h"
 #include "mib_queue_codel.h"
+
+#include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 void init_QFI_queues(struct QFI_queues* qfiQ, void(*verdict)(uint32_t, uint32_t, uint32_t))
 {

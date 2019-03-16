@@ -1,7 +1,9 @@
 #ifndef MIB_UPF_SCHED_H
 #define MIB_UPF_SCHED_H
-#include <stdint.h>
+
 #include "mib_qfi_queues.h"
+
+#include <stdint.h>
 
 struct UPF_thread_data
 {

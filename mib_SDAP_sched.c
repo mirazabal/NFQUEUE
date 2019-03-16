@@ -36,8 +36,6 @@ static inline void reset_active_queues(int* arrActiveQueues)
 
 static uint8_t getActiveQFIQueues(struct QFI_queues* qfiQ, int* arrActiveQueues)
 {
-//	reset_active_queues(arrActiveQueues);
-
 	uint8_t idx = 0;
 	for(int queueIdx = 0; queueIdx < QFI_NUM_QUEUES; ++queueIdx )
 	{
