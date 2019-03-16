@@ -29,7 +29,7 @@ size_t mib_queue_size(struct LockFreeQueue* q)
   assert(q != NULL);
   assert(q->q != NULL);
 
-  return  mib_queue_lfds_size(q->q);
+  return mib_queue_lfds_size(q->q);
 }
 
 void mib_queue_free(struct LockFreeQueue* q)

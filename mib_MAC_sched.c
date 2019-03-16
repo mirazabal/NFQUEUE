@@ -1,5 +1,6 @@
-#include "mib_MAC_sched.h"
+#include "mib_dq.h"
 #include "mib_drb_queues.h"
+#include "mib_MAC_sched.h"
 #include "mib_time.h"
 
 #include <sched.h>
@@ -7,6 +8,8 @@
 #include <stddef.h>
 #include <unistd.h>
 #include <stdio.h>
+
+#define MAC_NUM_PACKETS_PER_TICK 10
 
 static const int forwardPacket = 1;
 static int endThread = 1;
@@ -17,32 +20,80 @@ struct packetAndQueue
 	uint32_t queueIdx; 
 };
 
-static void getActiveDRBQueues(struct DRB_queues* drbQ, int* arrActiveQueues)
+static inline void reset_active_queues(int* arrActiveQueues)
 {
 	for(int i = 0; i < DRB_NUM_QUEUES; ++i)
 	{
-	 arrActiveQueues[i] = -1;
+		 arrActiveQueues[i] = -1;
 	}
+}
+
+static uint8_t getActiveDRBQueues(struct DRB_queues* drbQ, int* arrActiveQueues)
+{
+	//reset_active_queues(arrActiveQueues);
+
 	uint8_t idx = 0;
 	for(int queueIdx = 0; queueIdx < DRB_NUM_QUEUES; ++queueIdx )
 	{
 		uint32_t queueSize = getDRBBufferStatus(drbQ, queueIdx);
-
 		if(queueSize == 0) continue;
 
 	 	arrActiveQueues[idx] = queueIdx;
 		++idx;
 	}
+	return idx;
 }
 
-static void selectDRBPacket(struct DRB_queues* drbQ,  struct packetAndQueue* packetsSelected, uint8_t numPacketsPerTick, int* arrActiveQueues)
+static inline void printDRBStatus(struct DRB_queues* drbQ, uint8_t numActiveQueues, int* arrActiveQueues)
 {
-	for(int i =0 ; i < numPacketsPerTick; ++i){
+	for(int i = 0 ; i <  numActiveQueues; ++i){
+		uint32_t queueIdx = arrActiveQueues[i];
+		uint32_t queueSize = getDRBBufferStatus(drbQ, queueIdx);
+		printf("DRB queue idx = %d with size = %d at timestamp = %ld \n", queueIdx, queueSize, mib_get_time_us()); 
+	}
+}
+
+
+static uint8_t selectDRBPacket(struct DRB_queues* drbQ, uint8_t numActiveQueues, struct packetAndQueue* packetsSelected, uint8_t numberPackets, int* arrActiveQueues)
+{
+	printDRBStatus(drbQ, numActiveQueues, arrActiveQueues);
+
+	uint8_t packetsAlreadySelected = 0;
+	while(packetsAlreadySelected < numberPackets && numActiveQueues != 0){
+		for(int i = 0; i < numActiveQueues; ++i)
+		{
+			uint32_t queueIdx = arrActiveQueues[i];
+			uint32_t* p = getDRBPacket(drbQ, queueIdx);	
+			uint32_t queueSize = getDRBBufferStatus(drbQ, queueIdx);
+			if(queueSize == 0){
+				arrActiveQueues[i] = arrActiveQueues[numActiveQueues - 1];
+				--numActiveQueues;
+			}
+			
+			if(p == NULL) { // can happen... needs more deep inspection
+				free(p);
+				continue;
+			}
+
+			packetsSelected[packetsAlreadySelected].packet = p;
+			packetsSelected[packetsAlreadySelected].queueIdx = queueIdx;
+			++packetsAlreadySelected; 
+		}
+	}
+	return packetsAlreadySelected; 
+
+	/*
+	for(int i = 0 ; i < numPacketsPerTick; ++i){
 	 packetsSelected[i].packet = NULL;
 	}
 
  	int packetsAlreadySelected = 0;
 	int packetDetected = 1;
+
+	uint32_t queueIdx = 0;
+	uint32_t queueSize = getDRBBufferStatus(drbQ, queueIdx);
+  printf("DRB queue idx = %d with size = %d at timestamp = %ld \n", queueIdx,queueSize,mib_get_time_us() ); 
+
 	while(packetsAlreadySelected < numPacketsPerTick && packetDetected == 1){
 			packetDetected = 0;
 		for(int i = 0; i < DRB_NUM_QUEUES; ++i)
@@ -56,25 +107,15 @@ static void selectDRBPacket(struct DRB_queues* drbQ,  struct packetAndQueue* pac
 			}
 			packetDetected = 1;
  			uint32_t* p = getDRBPacket(drbQ, queueIdx);	
+			assert(p != NULL);
 //			printf("QFI queue = %d size = %d at timestamp = %ld \n", queueIdx, queueSize , mib_get_time_us() ); 
 
-    	printf("DRB queue idx = %d with size = %d at timestamp = %ld \n", queueIdx,queueSize , mib_get_time_us() ); 
 			packetsSelected[packetsAlreadySelected].packet = p;
 			packetsSelected[packetsAlreadySelected].queueIdx = queueIdx;
 			++packetsAlreadySelected; 
 		}
-	}
-}
+	}*/
 
-struct packetAndQueue* init_num_packets_process(uint8_t numPackets)
-{
-  struct packetAndQueue* packetsSelected = malloc(sizeof(struct packetAndQueue)*numPackets);
-	return packetsSelected;
-}
-
-void close_num_packets_process( struct packetAndQueue* packetsSelected)
-{
-	free(packetsSelected);
 }
 
 void close_MAC_thread()
@@ -85,26 +126,28 @@ void close_MAC_thread()
 void* thread_MAC_sched(void* threadData)
 {
   struct MAC_thread_data* data = (struct MAC_thread_data*)threadData;   
-	const uint8_t numPacketsPerTick = 10;
-  struct packetAndQueue* packetsPerTick = init_num_packets_process(numPacketsPerTick);
-
+	struct packetAndQueue dequePackets[MAC_NUM_PACKETS_PER_TICK];
 	int arrActiveQueues[DRB_NUM_QUEUES];
+	reset_active_queues(arrActiveQueues);
 
 	while(endThread){
 		usleep(10000);
     sched_yield();
 
-		getActiveDRBQueues(data->drbQ,arrActiveQueues);
-		selectDRBPacket(data->drbQ,packetsPerTick, numPacketsPerTick,arrActiveQueues);
-		for(int i = 0; i < numPacketsPerTick; ++i)
-		{
-			if(packetsPerTick[i].packet == NULL) break;
+		uint8_t numPackets = MAC_NUM_PACKETS_PER_TICK;
+		uint8_t numActQueues = getActiveDRBQueues(data->drbQ,arrActiveQueues);
+		uint8_t numPacSel = selectDRBPacket(data->drbQ, numActQueues, dequePackets, numPackets, arrActiveQueues);
 
-      data->send_verdict_cb(data->NFQUEUE_NUM, *packetsPerTick[i].packet,forwardPacket);
-      free(packetsPerTick[i].packet);	
+		uint64_t pacDeq = 0;
+		for(uint8_t i = 0; i < numPacSel; ++i)
+		{
+      data->send_verdict_cb(data->NFQUEUE_NUM, *dequePackets[i].packet,forwardPacket);
+      free(dequePackets[i].packet);	
+			++pacDeq;
 		}
+		assert(pacDeq < MAC_NUM_PACKETS_PER_TICK + 1);
+		mib_dq_dequeued(data->drbQ->dq[0], pacDeq);
 	}
- close_num_packets_process(packetsPerTick);
   return NULL;
 }
 
