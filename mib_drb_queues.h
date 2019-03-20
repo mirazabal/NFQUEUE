@@ -8,6 +8,8 @@
 
 #define DRB_NUM_QUEUES 11
 
+#define DYNAMIC_QUEUE 0
+
 struct DRB_queues
 {
   struct LockFreeQueue* queues[DRB_NUM_QUEUES];

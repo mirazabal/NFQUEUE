@@ -109,7 +109,9 @@ void* thread_MAC_sched(void* threadData)
 			++pacDeq;
 		}
 		assert(pacDeq < MAC_NUM_PACKETS_PER_TICK + 1);
+#if DYNAMIC_QUEUE
 		mib_dq_dequeued(data->drbQ->dq[0], pacDeq);
+#endif
 	}
   return NULL;
 }

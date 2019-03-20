@@ -101,15 +101,19 @@ void* thread_SDAP_sched(void *threadData)
 	const uint8_t DRB_QUEUE_IDX = 0;
 	while(endThread){
 		usleep(1000);
-		//uint32_t packetsAtDRB = getDRBBufferStatus(data->drbQ, DRB_QUEUE_IDX); 
-		//if(packetsAtDRB >= getMaxNumberPacketsDRB())
-		//		continue;
-		//uint32_t numPackets =  getMaxNumberPacketsDRB() - packetsAtDRB < SDAP_NUM_PACKETS_PER_TICK + 1 ? getMaxNumberPacketsDRB() - packetsAtDRB : SDAP_NUM_PACKETS_PER_TICK;
-		
+
+#if DYNAMIC_QUEUE 
 		uint64_t remainingPac = get_DRB_avail(data->drbQ, DRB_QUEUE_IDX); 
 		if(remainingPac == 0) continue;
 
 		uint8_t numPackets = remainingPac < SDAP_NUM_PACKETS_PER_TICK + 1 ? remainingPac : SDAP_NUM_PACKETS_PER_TICK;	
+#else
+		uint32_t packetsAtDRB = getDRBBufferStatus(data->drbQ, DRB_QUEUE_IDX); 
+		if(packetsAtDRB >= getMaxNumberPacketsDRB())
+				continue;
+		uint32_t numPackets =  getMaxNumberPacketsDRB() - packetsAtDRB < SDAP_NUM_PACKETS_PER_TICK + 1 ? getMaxNumberPacketsDRB() - packetsAtDRB : SDAP_NUM_PACKETS_PER_TICK;
+#endif
+
 		uint8_t numActQueues = getActiveQFIQueues(data->qfiQ, arrActiveQueues);
 		uint8_t numPacSel = selectQFIPacket(data->qfiQ, numActQueues, dequePackets, numPackets, arrActiveQueues);
 		uint8_t pacEnq = 0;
@@ -117,7 +121,9 @@ void* thread_SDAP_sched(void *threadData)
 		{
 				addPacketToDRB(data->drbQ, DRB_QUEUE_IDX, dequePackets[i].packet);
 		}
+#if DYNAMIC_QUEUE
   	mib_dq_enqueued(data->drbQ->dq[DRB_QUEUE_IDX], pacEnq);
+#endif
 	}
 	return NULL;
 }

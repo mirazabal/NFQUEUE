@@ -22,12 +22,11 @@ static void init_mapper(struct mib_mapper* map)
 //			if(i == 0) 
 //				mib_set_output_for_input(map, i, 0);
 //			else
-//				mib_set_output_for_input(map, i,  QFI_NUM_QUEUES - 1);
-//			mib_set_output_for_input(map, i, i);
-				mib_set_output_for_input(map, i, 0);
+				mib_set_output_for_input(map, i, i);
+//				mib_set_output_for_input(map, i, 0);
 		}else{
-//			mib_set_output_for_input(map, i,  QFI_NUM_QUEUES - 1);
-				mib_set_output_for_input(map, i, 0);
+			mib_set_output_for_input(map, i,  QFI_NUM_QUEUES - 1);
+//				mib_set_output_for_input(map, i, 0);
 		}
 	}	
 }
@@ -114,7 +113,7 @@ void* thread_UPF_sched(void* threadData)
 	init_mapper(&map);
 
 	while(endThread){
-		usleep(1000);
+		usleep(10500);
 
 		uint8_t numPackets = UPF_NUM_PACKETS_PER_TICK;	
 		uint8_t numActQueues = getActiveUPFQueues(data->upfQ, arrActiveQueues);
