@@ -1,23 +1,26 @@
 #include "mib_dq.h"
 #include "mib_drb_queues.h"
+#include "mib_scenario.h"
 #include "mib_SDAP_sched.h"
 #include "mib_qfi_queues.h"
 #include "mib_time.h"
+
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sched.h>
+#include <pthread.h>
 
 #define SDAP_NUM_PACKETS_PER_TICK 10
 
 static const int forwardPacket = 1;
 static int endThread = 1;
-static const uint64_t maxNumberPacketsDRB =1024; 
+static const uint64_t maxNumberPacketsDRB = MAX_NUM_PACK_DRB; 
 
 struct packetAndQueue
 {
-	uint32_t* packet;
+	struct packet_t* packet;
 	uint32_t queueIdx; 
 };
 
@@ -66,7 +69,7 @@ static uint8_t selectQFIPacket(struct QFI_queues* qfiQ, uint8_t numActiveQueues,
 		for(int i = 0; i < numActiveQueues; ++i)
 		{
 			uint32_t queueIdx = arrActiveQueues[i];
-			uint32_t* p = getQFIPacket(qfiQ, queueIdx);	
+			struct packet_t* p = getQFIPacket(qfiQ, queueIdx);	
 			uint32_t queueSize = getQFIBufferStatus(qfiQ, queueIdx);
 			if(queueSize == 0){
 				arrActiveQueues[i] = arrActiveQueues[numActiveQueues - 1];
@@ -74,7 +77,6 @@ static uint8_t selectQFIPacket(struct QFI_queues* qfiQ, uint8_t numActiveQueues,
 			}
 			
 			if(p == NULL) { // can happen... needs more deep inspection
-				free(p);
 				continue;
 			}
 
@@ -91,8 +93,21 @@ void close_SDAP_thread()
   endThread = 0;
 }
   
+static void set_realtime_priority()
+{
+	pthread_t this_thread = pthread_self();
+	struct sched_param params;
+	params.sched_priority = sched_get_priority_max(SCHED_RR) - 10;
+	int ret = pthread_setschedparam(this_thread, SCHED_RR, &params);
+	if(ret != 0){
+		printf("Error while setting the priority of the SDAP thread \n");
+	}
+
+}
+
 void* thread_SDAP_sched(void *threadData)
 {
+	set_realtime_priority();
 	struct SDAP_thread_data* data = (struct SDAP_thread_data*)threadData;
 	struct packetAndQueue dequePackets[SDAP_NUM_PACKETS_PER_TICK];
 	int arrActiveQueues[QFI_NUM_QUEUES];

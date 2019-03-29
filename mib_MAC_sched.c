@@ -1,7 +1,9 @@
+#include "mib_scenario.h"
 #include "mib_dq.h"
 #include "mib_drb_queues.h"
 #include "mib_MAC_sched.h"
 #include "mib_time.h"
+#include "mib_stats.h"
 
 #include <sched.h>
 #include <stdlib.h>
@@ -16,7 +18,7 @@ static int endThread = 1;
 
 struct packetAndQueue
 {
-	uint32_t* packet;
+	struct packet_t* packet;
 	uint32_t queueIdx; 
 };
 
@@ -61,7 +63,7 @@ static uint8_t selectDRBPacket(struct DRB_queues* drbQ, uint8_t numActiveQueues,
 		for(int i = 0; i < numActiveQueues; ++i)
 		{
 			uint32_t queueIdx = arrActiveQueues[i];
-			uint32_t* p = getDRBPacket(drbQ, queueIdx);	
+			struct packet_t* p = getDRBPacket(drbQ, queueIdx);	
 			uint32_t queueSize = getDRBBufferStatus(drbQ, queueIdx);
 			if(queueSize == 0){
 				arrActiveQueues[i] = arrActiveQueues[numActiveQueues - 1];
@@ -69,7 +71,6 @@ static uint8_t selectDRBPacket(struct DRB_queues* drbQ, uint8_t numActiveQueues,
 			}
 			
 			if(p == NULL) { // can happen... needs more deep inspection
-				free(p);
 				continue;
 			}
 
@@ -104,10 +105,25 @@ void* thread_MAC_sched(void* threadData)
 		uint64_t pacDeq = 0;
 		for(uint8_t i = 0; i < numPacSel; ++i)
 		{
-      data->send_verdict_cb(data->NFQUEUE_NUM, *dequePackets[i].packet,forwardPacket);
+			struct packet_t* p = dequePackets[i].packet;
+      data->send_verdict_cb(data->NFQUEUE_NUM, (*dequePackets[i].packet).idP,forwardPacket);
+			
+			mib_remove_packet_QFI_DRB(data->stats);
+
+			int64_t now = mib_get_time_us();
+
+			if(p->UDP_packet == 1){
+				printf("UDP Packet with id = %d, was at the queue UPF = %ld, at QFI = %ld and at DRB = %ld for a total of %ld at timestamp = %ld \n", p->idP, p->arrival_QFI - p->arrival_UPF, p->arrival_DRB - p->arrival_QFI, now - p->arrival_DRB, now - p->arrival_UPF , now); 
+			}
+			else{
+				printf("TCP Packet with id = %d, was at the queue UPF = %ld, at QFI = %ld and at DRB = %ld for a total of %ld at timestamp = %ld \n", p->idP, p->arrival_QFI - p->arrival_UPF, p->arrival_DRB - p->arrival_QFI, now - p->arrival_DRB, now - p->arrival_UPF , now); 
+			}
+
       free(dequePackets[i].packet);	
 			++pacDeq;
 		}
+
+		printf("Packets deque at MAC scheduler = %lu at timestamp = %ld \n", pacDeq, mib_get_time_us()); 
 		assert(pacDeq < MAC_NUM_PACKETS_PER_TICK + 1);
 #if DYNAMIC_QUEUE
 		mib_dq_dequeued(data->drbQ->dq[0], pacDeq);

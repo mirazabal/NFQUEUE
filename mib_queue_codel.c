@@ -1,3 +1,4 @@
+#include "5G_qos_model.h"
 #include "mib_queue_codel.h"
 #include "mib_queue.h"
 #include "mib_time.h"
@@ -79,7 +80,7 @@ static void drop_packet(struct QueueCodel* queue)
   void* data = mib_queue_deque(queue->q);
   if(data == NULL) return;
 
-  send_verdict_cb( queueNum, *(uint32_t*)data, dropPacket);
+  send_verdict_cb( queueNum, ((struct packet_t*)data)->idP, dropPacket);
   free(data);
   queue->packets_dropped++;
   printf(" dropping packet.. %lu at timestamp %lu \n", queue->packets_dropped , mib_get_time_us()  );

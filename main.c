@@ -1,9 +1,23 @@
+#define _GNU_SOURCE
 #include "nf-queue.h"
 #include "5G_qos_model.h"
-#include <unistd.h>
+
+#include <sched.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <unistd.h>
+
+// worse results observed from setting the affinity. Don't do it!!!
+/*static void set_affinity()
+{
+	cpu_set_t mask;
+	CPU_ZERO(&mask);
+	const int core_id = 0;
+	CPU_SET(core_id, &mask);
+	sched_setaffinity( 0, sizeof(mask), &mask );
+}
+*/
 
 int main(int argc, char *argv[])
 {

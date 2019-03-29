@@ -10,12 +10,16 @@
 #include "mib_SDAP_sched.h"
 #include "mib_MAC_sched.h"
 
+#include "mib_stats.h"
+
 static int const NFQUEUE_NUM = 0;
 static pthread_t pthread_UPF_sched;
 static pthread_t pthread_SDAP_sched;
 static pthread_t pthread_MAC_sched;
 
 static int init_vars = 0;
+
+static struct stats_t stats;
 
 static struct QFI_queues qfi_queues; 
 static struct UPF_queues upf_queues; 
@@ -50,10 +54,12 @@ static void init_threads_data(void(*verdict)(uint32_t, uint32_t, uint32_t))
   upf_data.send_verdict_cb = verdict;
   upf_data.qfiQ = &qfi_queues;
   upf_data.upfQ = &upf_queues;
+	upf_data.stats = &stats;
 
   mac_data.NFQUEUE_NUM = NFQUEUE_NUM;
   mac_data.send_verdict_cb = verdict;
   mac_data.drbQ = &drb_queues;
+	mac_data.stats = &stats;
 }
 
 void init_5G_qos_model(void(*verdict)(uint32_t, uint32_t, uint32_t))

@@ -7,6 +7,7 @@ struct MAC_thread_data
 {
   struct DRB_queues* drbQ;
   void (*send_verdict_cb)(uint32_t, uint32_t, uint32_t);
+	struct stats_t* stats;  
   uint8_t NFQUEUE_NUM; 
 };
 

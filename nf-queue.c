@@ -24,7 +24,10 @@
     
 /* only for NFQA_CT, not needed otherwise: */
 #include <linux/netfilter/nfnetlink_conntrack.h>
-    
+
+#include "mib_time.h"
+
+
 #define BUFFER_SIZE 256
 
 static struct mnl_socket *nl;
@@ -124,6 +127,12 @@ static uint32_t create_hash(struct iphdr* ipHeader)
     printf("ICMP packet detected... \n");
     return 0;
   }
+
+	if (ipHeader->protocol == IPPROTO_UDP){
+    printf("UDP packet detected at timestamp = %ld \n", mib_get_time_us() );
+    return 0;
+  }
+
 
   char buffer[BUFFER_SIZE];
   add_ip_addr(ipHeader,buffer);
