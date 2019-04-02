@@ -11,6 +11,7 @@ static const int queueNum = 0;
 static const int dropPacket = 0;
 
 static void (*send_verdict_cb)(uint32_t, uint32_t, uint32_t);
+static struct stats_t* codel_stats;
 
 static void init_codel_params(struct QueueCodel* queue)
 {
@@ -25,6 +26,11 @@ static void init_codel_params(struct QueueCodel* queue)
 
   queue->interval_ = 300000;
   queue->target_ =  15000;
+}
+
+static void init_mib_stats(struct stats_t* s)
+{
+  codel_stats = s;  
 }
 
 static int64_t control_law(struct QueueCodel* queue, int64_t t, uint32_t count)
@@ -69,9 +75,10 @@ static struct dodequeue_result dodequeue(struct QueueCodel* queue, int64_t now)
   return ret;
 }
 
-void mib_queue_codel_init(struct QueueCodel* queue, void(*verdict)(uint32_t, uint32_t, uint32_t))
+void mib_queue_codel_init(struct QueueCodel* queue, void(*verdict)(uint32_t, uint32_t, uint32_t), struct stats_t* stats)
 {
   init_codel_params(queue);
+  init_mib_stats(stats);
   send_verdict_cb = verdict;
 }
 
@@ -85,6 +92,8 @@ static void drop_packet(struct QueueCodel* queue)
   queue->packets_dropped++;
   printf(" dropping packet.. %lu at timestamp %lu \n", queue->packets_dropped , mib_get_time_us()  );
   queue->pTimer.pos = queue->pTimer.pos - 1;
+
+  mib_remove_packet_QFI_DRB(codel_stats);
 }
 
 

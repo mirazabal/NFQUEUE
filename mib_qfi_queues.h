@@ -3,9 +3,11 @@
 
 #include "5G_qos_model.h"
 #include "mib_scenario.h"
+#include "mib_stats.h"
 
 #include <stdint.h>
 #include <stddef.h>
+#include "mib_stats.h"
 
 #define QFI_NUM_QUEUES 8
 
@@ -19,7 +21,7 @@ struct QFI_queues
 #endif
 };
 
-void init_QFI_queues(struct QFI_queues* qfiQ, void(*verdict)(uint32_t, uint32_t, uint32_t));
+void init_QFI_queues(struct QFI_queues* qfiQ, void(*verdict)(uint32_t, uint32_t, uint32_t), struct stats_t*);
 
 void close_QFI_queues(struct QFI_queues* qfiQ);
 

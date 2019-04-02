@@ -2,6 +2,7 @@
 #define MIB_QUEUE_CODEL
 
 #include "mib_queue.h"
+#include "mib_stats.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -24,13 +25,13 @@ struct QueueCodel
   uint32_t lastcount_; // = 0;
   uint8_t	dropping_ ; //= false;
 
-	struct LockFreeQueue* q;
+  struct LockFreeQueue* q;
 
   uint32_t interval_; // = 200000;// <>  TARGET =  MS2TIME(5);// 5ms TARGET queue delay
   uint32_t target_; // = 10000;
 };
 
-void mib_queue_codel_init(struct QueueCodel*, void(*verdict)(uint32_t, uint32_t, uint32_t));
+void mib_queue_codel_init(struct QueueCodel*, void(*verdict)(uint32_t, uint32_t, uint32_t), struct stats_t*);
 
 void mib_queue_codel_free(struct QueueCodel* );
 void mib_queue_codel_enqueu(struct QueueCodel*,void* data);

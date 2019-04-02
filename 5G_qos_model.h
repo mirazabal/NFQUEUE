@@ -5,11 +5,11 @@
 
 struct packet_t
 {
-	int64_t arrival_UPF;
-	int64_t arrival_QFI;
-	int64_t arrival_DRB;
-	uint32_t idP;
-	uint8_t UDP_packet;
+  int64_t arrival_UPF;
+  int64_t arrival_QFI;
+  int64_t arrival_DRB;
+  uint32_t idP;
+  uint8_t UDP_packet;
 };
 
 

@@ -31,17 +31,17 @@ static struct MAC_thread_data mac_data;
 
 static void init_qfi_queues(void(*verdict)(uint32_t, uint32_t, uint32_t))
 {
-  init_QFI_queues(&qfi_queues, verdict);
+  init_QFI_queues(&qfi_queues, verdict, &stats);
 }
 
 static void init_upf_queues(void(*verdict)(uint32_t, uint32_t, uint32_t))
 {
-  init_UPF_queues(&upf_queues, verdict);
+  init_UPF_queues(&upf_queues, verdict, &stats);
 }
 
 static void init_drb_queues(void(*verdict)(uint32_t, uint32_t, uint32_t))
 {
-  init_DRB_queues(&drb_queues, verdict);
+  init_DRB_queues(&drb_queues, verdict, &stats);
 }
 
 static void init_threads_data(void(*verdict)(uint32_t, uint32_t, uint32_t))
@@ -54,12 +54,12 @@ static void init_threads_data(void(*verdict)(uint32_t, uint32_t, uint32_t))
   upf_data.send_verdict_cb = verdict;
   upf_data.qfiQ = &qfi_queues;
   upf_data.upfQ = &upf_queues;
-	upf_data.stats = &stats;
+  upf_data.stats = &stats;
 
   mac_data.NFQUEUE_NUM = NFQUEUE_NUM;
   mac_data.send_verdict_cb = verdict;
   mac_data.drbQ = &drb_queues;
-	mac_data.stats = &stats;
+  mac_data.stats = &stats;
 }
 
 void init_5G_qos_model(void(*verdict)(uint32_t, uint32_t, uint32_t))

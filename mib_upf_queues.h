@@ -3,12 +3,12 @@
 
 #include "5G_qos_model.h"
 #include "mib_scenario.h"
+#include "mib_stats.h"
 
 #include <stdint.h>
 #include <stddef.h>
 
 #define UPF_NUM_QUEUES 64
-
 
 struct UPF_queues
 {
@@ -20,7 +20,7 @@ struct UPF_queues
   uint8_t sizeQueue;
 };
 
-void init_UPF_queues(struct UPF_queues* upfQ, void(*verdict)(uint32_t, uint32_t, uint32_t));
+void init_UPF_queues(struct UPF_queues* upfQ, void(*verdict)(uint32_t, uint32_t, uint32_t), struct stats_t* stats );
 
 void close_UPF_queues(struct UPF_queues* upfQ);
 

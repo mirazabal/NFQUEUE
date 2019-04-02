@@ -5,13 +5,13 @@
 
 #include <stdlib.h>
 
-void init_UPF_queues(struct UPF_queues* upfQ, void(*verdict)(uint32_t, uint32_t, uint32_t))
+void init_UPF_queues(struct UPF_queues* upfQ, void(*verdict)(uint32_t, uint32_t, uint32_t), struct stats_t* stats)
 {
   assert(upfQ != NULL);
   for(uint32_t i = 0; i < UPF_NUM_QUEUES; ++i){
 #if UPF_QUEUES_CODEL 
     upfQ->queues[i] = malloc(sizeof(struct QueueCodel));
-    mib_queue_codel_init(upfQ->queues[i],verdict); 
+    mib_queue_codel_init(upfQ->queues[i],verdict, stats); 
 #else
   upfQ->queues[i] = malloc(sizeof(struct LockFreeQueue));
   mib_queue_init(upfQ->queues[i]); 

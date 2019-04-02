@@ -4,6 +4,7 @@
 #include "mib_queue_codel.h"
 #include "mib_dq.h"
 #include "5G_qos_model.h"
+#include "mib_stats.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -15,14 +16,14 @@ struct DRB_queues
 #if DRB_QUEUES_CODEL 
   struct  QueueCodel* queues[DRB_NUM_QUEUES];
 #else  
-	struct LockFreeQueue* queues[DRB_NUM_QUEUES];
+  struct LockFreeQueue* queues[DRB_NUM_QUEUES];
 #endif
 
-	struct mib_dq* dq[DRB_NUM_QUEUES]; 
+  struct mib_dq* dq[DRB_NUM_QUEUES]; 
   uint8_t sizeQueue;
 };
 
-void init_DRB_queues(struct DRB_queues* drbQ, void(*verdict)(uint32_t, uint32_t, uint32_t));
+void init_DRB_queues(struct DRB_queues* drbQ, void(*verdict)(uint32_t, uint32_t, uint32_t), struct stats_t* stats );
 
 void close_DRB_queues(struct DRB_queues* drbQ);
 

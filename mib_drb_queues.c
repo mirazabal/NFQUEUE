@@ -4,20 +4,20 @@
 #include <stdlib.h>
 #include "mib_queue.h"
 
-void init_DRB_queues(struct DRB_queues* drbQ, void(*verdict)(uint32_t, uint32_t, uint32_t))
+void init_DRB_queues(struct DRB_queues* drbQ, void(*verdict)(uint32_t, uint32_t, uint32_t), struct stats_t* stats)
 {
-	const uint64_t hold_time_us = 100000;
+  const uint64_t hold_time_us = 100000;
   for(uint8_t i = 0; i < DRB_NUM_QUEUES; i++){
 #if DRB_QUEUES_CODEL
     drbQ->queues[i] = malloc(sizeof(struct QueueCodel));
-    mib_queue_codel_init(drbQ->queues[i],verdict);
+    mib_queue_codel_init(drbQ->queues[i],verdict,stats);
 #else
     drbQ->queues[i] = malloc(sizeof(struct LockFreeQueue));
     mib_queue_init(drbQ->queues[i]);
 #endif
 
-		drbQ->dq[i] = malloc(sizeof(struct mib_dq));
-		mib_dq_init(drbQ->dq[i], hold_time_us);
+    drbQ->dq[i] = malloc(sizeof(struct mib_dq));
+    mib_dq_init(drbQ->dq[i], hold_time_us);
   }  
 }
 

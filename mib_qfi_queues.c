@@ -8,15 +8,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-void init_QFI_queues(struct QFI_queues* qfiQ, void(*verdict)(uint32_t, uint32_t, uint32_t))
+void init_QFI_queues(struct QFI_queues* qfiQ, void(*verdict)(uint32_t, uint32_t, uint32_t), struct stats_t* stats)
 {
   assert(qfiQ != NULL);
   for(uint32_t i = 0; i < QFI_NUM_QUEUES; ++i){
 #if QFI_QUEUES_CODEL
     qfiQ->queues[i] = malloc(sizeof(struct QueueCodel));
-    mib_queue_codel_init(qfiQ->queues[i],verdict); 
+    mib_queue_codel_init(qfiQ->queues[i],verdict,stats); 
 #else
-		qfiQ->queues[i] = malloc(sizeof(struct LockFreeQueue));
+    qfiQ->queues[i] = malloc(sizeof(struct LockFreeQueue));
     mib_queue_init(qfiQ->queues[i]); 
 #endif
   }
