@@ -1,5 +1,6 @@
 #include "mib_time.h"
 #include "mib_drb_queues.h"
+#include "mib_scenario.h"
 
 #include <stdlib.h>
 #include "mib_queue.h"
@@ -31,7 +32,16 @@ void close_DRB_queues(struct DRB_queues* drbQ)
 
 uint64_t get_DRB_avail(struct DRB_queues* drbQ, uint8_t idx)
 {
-	return mib_dq_avail(drbQ->dq[idx]);
+  return mib_dq_avail(drbQ->dq[idx]);
+}
+
+size_t getDRBMaxNumberPackets(struct DRB_queues* drbQ, uint8_t idx)
+{
+#if DYNAMIC_QUEUE 
+  return mib_dq_avail(drbQ->dq[idx]);
+#else
+  return MAX_NUM_PACK_DRB;
+#endif
 }
 
 void addPacketToDRB(struct DRB_queues* drbQ, uint8_t queueIdx, struct packet_t* p)
@@ -67,9 +77,9 @@ size_t getDRBBufferStatus(struct DRB_queues* drbQ, uint8_t queueIdx)
 {
   assert(drbQ != NULL);
   assert(drbQ->queues[queueIdx] != NULL);
-  
+
 #if DRB_QUEUES_CODEL
-	return mib_queue_codel_size(drbQ->queues[queueIdx]);
+  return mib_queue_codel_size(drbQ->queues[queueIdx]);
 #else
   return mib_queue_size(drbQ->queues[queueIdx]);
 #endif

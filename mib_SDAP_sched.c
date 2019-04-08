@@ -4,6 +4,7 @@
 #include "mib_SDAP_sched.h"
 #include "mib_qfi_queues.h"
 #include "mib_time.h"
+#include "mapper.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,18 +16,33 @@
 
 static const int forwardPacket = 1;
 static int endThread = 1;
-static const uint64_t maxNumberPacketsDRB = MAX_NUM_PACK_DRB; 
+//static const uint64_t maxNumberPacketsDRB = MAX_NUM_PACK_DRB; 
 
 struct packetAndQueue
 {
   struct packet_t* packet;
-  uint32_t queueIdx; 
+  uint32_t drbIdx; 
 };
 
+struct AvailablePacketsPerDRB
+{
+  int32_t size[DRB_NUM_QUEUES];
+  uint8_t arrSize;
+};
+
+struct ActiveQFIQueues
+{
+  int arrIdx[QFI_NUM_QUEUES];
+  uint8_t numActiveQueues;
+};
+
+/*
 static uint64_t getMaxNumberPacketsDRB()
 {
   return maxNumberPacketsDRB;
 }
+*/
+
 
 static inline void reset_active_queues(int* arrActiveQueues)
 {
@@ -36,7 +52,7 @@ static inline void reset_active_queues(int* arrActiveQueues)
   }
 }
 
-static uint8_t getActiveQFIQueues(struct QFI_queues* qfiQ, int* arrActiveQueues)
+static void getActiveQFIQueues(struct QFI_queues* qfiQ, struct ActiveQFIQueues* actQFI)
 {
   uint8_t idx = 0;
   for(int queueIdx = 0; queueIdx < QFI_NUM_QUEUES; ++queueIdx )
@@ -44,47 +60,89 @@ static uint8_t getActiveQFIQueues(struct QFI_queues* qfiQ, int* arrActiveQueues)
     uint32_t queueSize = getQFIBufferStatus(qfiQ, queueIdx);
     if(queueSize == 0) continue;
 
-    arrActiveQueues[idx] = queueIdx;
+    actQFI->arrIdx[idx] = queueIdx;
     ++idx;
   }
-  return idx;
+  actQFI->numActiveQueues = idx;
 }
 
-static inline void printQFIStatus(struct QFI_queues* qfiQ, uint8_t numActiveQueues, int* arrActiveQueues)
+static inline void printQFIStatus(struct QFI_queues* qfiQ, struct ActiveQFIQueues* availQFI)
 {
-  for(int i = 0 ; i <  numActiveQueues; ++i){
-    uint32_t queueIdx = arrActiveQueues[i];
+  for(int i = 0 ; i < availQFI->numActiveQueues; ++i){
+    uint32_t queueIdx = availQFI->arrIdx[i];
     uint32_t queueSize = getQFIBufferStatus(qfiQ, queueIdx);
     printf("QFI queue idx = %d with size = %d at timestamp = %ld \n", queueIdx, queueSize, mib_get_time_us()); 
   }
 }
 
-static uint8_t selectQFIPacket(struct QFI_queues* qfiQ, uint8_t numActiveQueues, struct packetAndQueue* packetsSelected, uint8_t numberPackets, int* arrActiveQueues)
+static void removeActiveQueue(struct ActiveQFIQueues* qfiQueues, uint8_t idx)
 {
-  printQFIStatus(qfiQ, numActiveQueues, arrActiveQueues);
+  qfiQueues->arrIdx[idx] = qfiQueues->arrIdx[ qfiQueues->numActiveQueues - 1];
+  --qfiQueues->numActiveQueues; 
+}
+
+
+static uint8_t selectQFIPacket(struct QFI_queues* qfiQ, struct packetAndQueue* packetsSelected, uint8_t numberPackets, struct ActiveQFIQueues* actQFI, struct AvailablePacketsPerDRB* availPacketsDRB, struct mib_mapper* map)
+{
+  printQFIStatus(qfiQ, actQFI);
 
   uint8_t packetsAlreadySelected = 0;
-  while(packetsAlreadySelected < numberPackets && numActiveQueues != 0){
-    for(int i = 0; i < numActiveQueues; ++i)
-    {
-      uint32_t queueIdx = arrActiveQueues[i];
-      struct packet_t* p = getQFIPacket(qfiQ, queueIdx);	
-      uint32_t queueSize = getQFIBufferStatus(qfiQ, queueIdx);
-      if(queueSize == 0){
-        arrActiveQueues[i] = arrActiveQueues[numActiveQueues - 1];
-        --numActiveQueues;
+  while(packetsAlreadySelected < numberPackets && actQFI->numActiveQueues != 0 ){
+    for(int i = 0; i < actQFI->numActiveQueues; ++i){
+      uint32_t qfiIdx = actQFI->arrIdx[i];
+      uint8_t drbIdx = mib_get_ouput_for_input(map,qfiIdx); 
+      assert( availPacketsDRB->size[drbIdx] != -1);
+      if(availPacketsDRB->size[qfiIdx] == 0){
+        removeActiveQueue(actQFI,i);  
+        --i;
+        continue;
       }
-
+      struct packet_t *p = getQFIPacket(qfiQ, qfiIdx);	
       if(p == NULL) { // can happen... needs more deep inspection
         continue;
       }
 
+      uint32_t queueSize = getQFIBufferStatus(qfiQ, qfiIdx);
+      if(queueSize == 0){
+        removeActiveQueue(actQFI, i);
+        --i;
+      }
+      --availPacketsDRB->size[drbIdx];
+
       packetsSelected[packetsAlreadySelected].packet = p;
-      packetsSelected[packetsAlreadySelected].queueIdx = queueIdx;
+      packetsSelected[packetsAlreadySelected].drbIdx = drbIdx;
       ++packetsAlreadySelected; 
     }
   }
   return packetsAlreadySelected; 
+}
+
+static void resetAvailablePacketsPerDRB(struct AvailablePacketsPerDRB* availablePacketsDRBQueues)
+{
+  for(uint8_t i = 0; i < DRB_NUM_QUEUES; ++i){
+    availablePacketsDRBQueues->size[i] = -1;
+  } 
+ availablePacketsDRBQueues->arrSize = 0;  
+}  
+
+static void getAvailableDRBQueues(struct DRB_queues* drbQ, struct ActiveQFIQueues* activeQFIQueues, struct AvailablePacketsPerDRB* availablePacketsDRBQueues, struct mib_mapper* map)
+{
+  resetAvailablePacketsPerDRB(availablePacketsDRBQueues);
+//   assert(activeUPFQueues->size != 0);
+    uint8_t idx = 0;
+    while(idx < activeQFIQueues->numActiveQueues) {
+      uint8_t drbIdx = mib_get_ouput_for_input(map, activeQFIQueues->arrIdx[idx]);
+      uint32_t packetsAtDRB = getDRBBufferStatus(drbQ, drbIdx); 
+      uint32_t maxPacketsAllowed = getDRBMaxNumberPackets(drbQ,drbIdx); 
+
+      if(packetsAtDRB >= maxPacketsAllowed){
+        removeActiveQueue(activeQFIQueues, idx);
+        continue;
+      }
+      availablePacketsDRBQueues->size[drbIdx] =  maxPacketsAllowed - packetsAtDRB;
+      ++idx;
+    }
+    availablePacketsDRBQueues->arrSize = idx;
 }
 
 void close_SDAP_thread()
@@ -101,21 +159,34 @@ static void set_realtime_priority()
   if(ret != 0){
     printf("Error while setting the priority of the SDAP thread \n");
   }
-
 }
+
+static void init_mapper(struct mib_mapper* map)
+{
+  mib_init_mapper(map, QFI_NUM_QUEUES, DRB_NUM_QUEUES);	
+  for(int i = 0; i < QFI_NUM_QUEUES; ++i){
+    mib_set_output_for_input(map, i, 0);
+  }	
+}
+
+
 
 void* thread_SDAP_sched(void *threadData)
 {
   set_realtime_priority();
   struct SDAP_thread_data* data = (struct SDAP_thread_data*)threadData;
   struct packetAndQueue dequePackets[SDAP_NUM_PACKETS_PER_TICK];
-  int arrActiveQueues[QFI_NUM_QUEUES];
-  reset_active_queues(arrActiveQueues);
 
-  const uint8_t DRB_QUEUE_IDX = 0;
+  struct AvailablePacketsPerDRB availablePacketsPerDRB;
+  struct ActiveQFIQueues activeQFIQueues;
+
+  struct mib_mapper map;
+  init_mapper(&map);
+
+ // const uint8_t DRB_QUEUE_IDX = 0;
   while(endThread){
     usleep(1000);
-
+/*
 #if DYNAMIC_QUEUE 
     uint64_t remainingPac = get_DRB_avail(data->drbQ, DRB_QUEUE_IDX); 
     if(remainingPac == 0)
@@ -127,18 +198,30 @@ void* thread_SDAP_sched(void *threadData)
       continue;
     uint32_t numPackets =  getMaxNumberPacketsDRB() - packetsAtDRB < SDAP_NUM_PACKETS_PER_TICK + 1 ? getMaxNumberPacketsDRB() - packetsAtDRB : SDAP_NUM_PACKETS_PER_TICK;
 #endif
+*/
 
-    uint8_t numActQueues = getActiveQFIQueues(data->qfiQ, arrActiveQueues);
-    uint8_t numPacSel = selectQFIPacket(data->qfiQ, numActQueues, dequePackets, numPackets, arrActiveQueues);
+    getActiveQFIQueues(data->qfiQ, &activeQFIQueues);
+    getAvailableDRBQueues(data->drbQ, &activeQFIQueues, &availablePacketsPerDRB, &map);
+
+    if(activeQFIQueues.numActiveQueues == 0 || availablePacketsPerDRB.arrSize == 0) continue;
+
+    const uint8_t numPackets = SDAP_NUM_PACKETS_PER_TICK; 
+    uint8_t numPacSel = selectQFIPacket(data->qfiQ, dequePackets, numPackets, &activeQFIQueues, &availablePacketsPerDRB, &map);
+
     uint8_t pacEnq = 0;
     for(uint8_t i = 0 ; i < numPacSel; ++i,++pacEnq)
     {
-      addPacketToDRB(data->drbQ, DRB_QUEUE_IDX, dequePackets[i].packet);
+      uint8_t drbIdx = dequePackets[i].drbIdx;
+      struct packet_t *p = dequePackets[i].packet;
+      addPacketToDRB(data->drbQ, drbIdx, p);
+      ++pacEnq;
     }
 #if DYNAMIC_QUEUE
     mib_dq_enqueued(data->drbQ->dq[DRB_QUEUE_IDX], pacEnq);
 #endif
   }
+
+  mib_free_mapper(&map);
   return NULL;
 }
 
