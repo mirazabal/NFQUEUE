@@ -19,6 +19,7 @@ struct QFI_queues
 #else
  struct LockFreeQueue* queues[QFI_NUM_QUEUES];
 #endif
+ size_t maxNumberPackets[QFI_NUM_QUEUES];
 };
 
 void init_QFI_queues(struct QFI_queues* qfiQ, void(*verdict)(uint32_t, uint32_t, uint32_t), struct stats_t*);
@@ -30,6 +31,11 @@ void addPacketToQFI(struct QFI_queues* qfiQ, uint8_t  queueIdx, struct packet_t*
 struct packet_t* getQFIPacket(struct  QFI_queues* qfiQ, uint8_t queueIdx);
 
 size_t getQFIBufferStatus(struct QFI_queues* qfiQ, uint8_t queueIdx);
+
+size_t getQFIMaxNumberPackets(struct QFI_queues* qfiQ, uint8_t queueIdx);
+
+void setQFIMaxNumberPackets(struct QFI_queues* qfiQ, uint8_t queueIdx, size_t maxNumPackets);
+
 
 #endif
 

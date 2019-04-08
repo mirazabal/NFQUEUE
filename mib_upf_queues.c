@@ -34,23 +34,23 @@ void addPacketToUPF(struct UPF_queues* upfQ, uint8_t queueIdx, uint32_t id)
   assert(queueIdx < UPF_NUM_QUEUES);
 
   // first step in the QoS model. The data has to be freed if it is discarded or if it gets into the last step if the packet is accepted
-	
-	struct packet_t *p = malloc(sizeof(struct packet_t));	
-	p->idP = id;
-	p->arrival_UPF = mib_get_time_us();
-	if(queueIdx == 0)
-		p->UDP_packet = 1;
-	else
-		p->UDP_packet = 0;
 
-//  uint32_t* idP = malloc(sizeof(uint32_t));
-//  *idP = id;
+  struct packet_t *p = malloc(sizeof(struct packet_t));	
+  p->idP = id;
+  p->arrival_UPF = mib_get_time_us();
+  if(queueIdx == 0)
+    p->UDP_packet = 1;
+  else
+    p->UDP_packet = 0;
+
+  //  uint32_t* idP = malloc(sizeof(uint32_t));
+  //  *idP = id;
 #if UPF_QUEUES_CODEL 
   //mib_queue_codel_enqueu(upfQ->queues[queueIdx],idP);
   mib_queue_codel_enqueu(upfQ->queues[queueIdx],p);
 #else  
-	//mib_queue_enqueu(upfQ->queues[queueIdx],idP);
-	mib_queue_enqueu(upfQ->queues[queueIdx],p);
+  //mib_queue_enqueu(upfQ->queues[queueIdx],idP);
+  mib_queue_enqueu(upfQ->queues[queueIdx],p);
 #endif
 }
 

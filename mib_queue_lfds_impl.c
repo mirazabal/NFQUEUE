@@ -18,28 +18,27 @@ void mib_queue_lfds_free(struct QueueLFDS* q)
 void mib_queue_lfds_enqueu(struct QueueLFDS* q, void* data)
 {
   assert(q != NULL);
-	assert(data != NULL);
+  assert(data != NULL);
   //	printf("into enqueu with data value = %u \n",*(unsigned int*)(data)  );
   int ret = lfds711_queue_bmm_enqueue( &q->qbmms, NULL, data);
   if(ret == 1)
     atomic_fetch_add_explicit(&q->nb_elements, 1, memory_order_relaxed); 	
-
 }
 
 void* mib_queue_lfds_deque(struct QueueLFDS* q)
 {
   assert(q != NULL);
-	if(q->nb_elements < 1) return NULL;
+  if(q->nb_elements < 1) return NULL;
 
   void *data = NULL;
-	int ret = 0;
-	while (ret == 0){
-  	ret =	lfds711_queue_bmm_dequeue(&q->qbmms, NULL, &data);
+  int ret = 0;
+  while (ret == 0){
+    ret = lfds711_queue_bmm_dequeue(&q->qbmms, NULL, &data);
     sched_yield();
-	}
-	assert(data != NULL);
-	
-	//if(q->nb_elements != 0)
+  }
+  assert(data != NULL);
+
+  //if(q->nb_elements != 0)
   atomic_fetch_sub_explicit(&q->nb_elements, 1, memory_order_relaxed); 	
 
   return data;

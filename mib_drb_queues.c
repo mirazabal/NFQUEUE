@@ -40,7 +40,10 @@ void addPacketToDRB(struct DRB_queues* drbQ, uint8_t queueIdx, struct packet_t* 
   assert(drbQ->queues[queueIdx] != NULL);
   assert(queueIdx < DRB_NUM_QUEUES);
 
-	p->arrival_DRB = mib_get_time_us();
+  uint32_t packetsAtDRB = getDRBBufferStatus(drbQ, queueIdx); 
+  p->packets_DRB = packetsAtDRB;
+  p->arrival_DRB = mib_get_time_us();
+
 #if DRB_QUEUES_CODEL
   mib_queue_codel_enqueu(drbQ->queues[queueIdx],p);
 #else  
