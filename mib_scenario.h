@@ -2,7 +2,7 @@
 #define MIB_SCENARIO
 
 
-
+/*
 #define FIRST_1st 0
 #define FIRST_2nd_10 0
 #define FIRST_2nd_20 0
@@ -15,6 +15,7 @@
 #define FIRST_6th 0
 #define FIRST_7th 0
 #define FIRST_8th 1
+*/
 
 #define SECOND_1st 0
 #define SECOND_2nd_10 0

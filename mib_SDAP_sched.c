@@ -215,10 +215,10 @@ void* thread_SDAP_sched(void *threadData)
       struct packet_t *p = dequePackets[i].packet;
       addPacketToDRB(data->drbQ, drbIdx, p);
       ++pacEnq;
-    }
 #if DYNAMIC_QUEUE
-    mib_dq_enqueued(data->drbQ->dq[DRB_QUEUE_IDX], pacEnq);
+    mib_dq_enqueued(data->drbQ->dq[drbIdx], pacEnq);
 #endif
+   }
   }
 
   mib_free_mapper(&map);

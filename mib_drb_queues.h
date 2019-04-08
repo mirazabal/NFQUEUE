@@ -5,6 +5,7 @@
 #include "mib_dq.h"
 #include "5G_qos_model.h"
 #include "mib_stats.h"
+#include "mib_scenario.h"
 
 #include <stddef.h>
 #include <stdint.h>
