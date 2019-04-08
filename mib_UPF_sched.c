@@ -185,7 +185,7 @@ void* thread_UPF_sched(void* threadData)
     getActiveUPFQueues(data->upfQ, &activeUPFQueues);
     getAvailableQFIQueues(data->qfiQ, &activeUPFQueues, &availablePacketsPerQFI, &map);
 
-    if(activeUPFQueues.numActiveQueues == 0 || availablePacketsPerQFI->arrSize == 0) continue;
+    if(activeUPFQueues.numActiveQueues == 0 || availablePacketsPerQFI.arrSize == 0) continue;
  
     const uint8_t numPackets = UPF_NUM_PACKETS_PER_TICK; 
     uint8_t numPacSel = selectUPFPacket(data->upfQ, dequePackets, numPackets, &activeUPFQueues, &availablePacketsPerQFI, &map);
