@@ -6,15 +6,15 @@
 
 struct mib_dq
 {
-	uint64_t limit;
-	_Atomic uint64_t num_queued;
-	uint64_t num_dequeued;
-	uint64_t lowest_slack;
-	uint64_t max_limit;
-	uint64_t min_limit;
+  uint64_t limit;
+  _Atomic uint64_t num_queued;
+  uint64_t num_dequeued;
+  uint64_t lowest_slack;
+  uint64_t max_limit;
+  uint64_t min_limit;
 
-	int64_t slack_start_time;
-	int64_t slack_hold_time;
+  int64_t slack_start_time;
+  int64_t slack_hold_time;
 };
 
 void mib_dq_init(struct mib_dq* dq, uint64_t hold_time_us);

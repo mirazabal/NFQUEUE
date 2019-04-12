@@ -1,6 +1,5 @@
 #include "mib_time.h"
 #include "mib_drb_queues.h"
-#include "mib_scenario.h"
 
 #include <stdlib.h>
 #include "mib_queue.h"
