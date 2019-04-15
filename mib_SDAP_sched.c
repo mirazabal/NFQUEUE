@@ -132,14 +132,19 @@ static void getAvailableDRBQueues(struct DRB_queues* drbQ, struct ActiveQFIQueue
     uint8_t idx = 0;
     while(idx < activeQFIQueues->numActiveQueues) {
       uint8_t drbIdx = mib_get_ouput_for_input(map, activeQFIQueues->arrIdx[idx]);
-      uint32_t packetsAtDRB = getDRBBufferStatus(drbQ, drbIdx); 
-      uint32_t maxPacketsAllowed = getDRBMaxNumberPackets(drbQ,drbIdx); 
 
-      if(packetsAtDRB >= maxPacketsAllowed){
-        removeActiveQueue(activeQFIQueues, idx);
+			uint32_t availablePac = getDRBAvailablePackets(drbQ,drbIdx);
+			if (availablePac == 0){
+			   removeActiveQueue(activeQFIQueues, idx);
         continue;
-      }
-      availablePacketsDRBQueues->size[drbIdx] =  maxPacketsAllowed - packetsAtDRB;
+			}
+
+//			uint32_t packetsatdrb = getdrbbufferstatus(drbq, drbidx); 
+//      uint32_t maxpacketsallowed = getdrbmaxnumberpackets(drbq,drbidx); 
+
+
+      availablePacketsDRBQueues->size[drbIdx] = availablePac;
+			 //	maxPacketsAllowed - packetsAtDRB;
       ++idx;
     }
     availablePacketsDRBQueues->arrSize = idx;
@@ -168,8 +173,6 @@ static void init_mapper(struct mib_mapper* map)
     mib_set_output_for_input(map, i, 0);
   }	
 }
-
-
 
 void* thread_SDAP_sched(void *threadData)
 {
@@ -205,21 +208,26 @@ void* thread_SDAP_sched(void *threadData)
 
     if(activeQFIQueues.numActiveQueues == 0 || availablePacketsPerDRB.arrSize == 0) continue;
 
-    const uint8_t numPackets = SDAP_NUM_PACKETS_PER_TICK; 
+    const uint32_t numPackets = SDAP_NUM_PACKETS_PER_TICK; 
     uint8_t numPacSel = selectQFIPacket(data->qfiQ, dequePackets, numPackets, &activeQFIQueues, &availablePacketsPerDRB, &map);
 
-    uint8_t pacEnq = 0;
-    for(uint8_t i = 0 ; i < numPacSel; ++i,++pacEnq)
+    uint32_t pacEnq = 0;
+    for(uint32_t i = 0 ; i < numPacSel; ++i)
     {
-      uint8_t drbIdx = dequePackets[i].drbIdx;
+      uint32_t drbIdx = dequePackets[i].drbIdx;
       struct packet_t *p = dequePackets[i].packet;
       addPacketToDRB(data->drbQ, drbIdx, p);
-      ++pacEnq;
-#if DYNAMIC_QUEUE
-    mib_dq_enqueued(data->drbQ->dq[drbIdx], pacEnq);
-#endif
+     ++pacEnq;
    }
-  }
+#if DYNAMIC_QUEUE
+const uint32_t DRB_QUEUE_IDX = 0; 
+//    mib_dq_enqueued(data->drbQ->dq[drbIdx], pacEnq);
+    mib_dq_enqueued(data->drbQ->dq[DRB_QUEUE_IDX], pacEnq);
+#endif
+
+
+
+ 	}
 
   mib_free_mapper(&map);
   return NULL;

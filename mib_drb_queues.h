@@ -13,7 +13,6 @@
 
 struct DRB_queues
 {
-
 #if DRB_QUEUES_CODEL 
   struct  QueueCodel* queues[DRB_NUM_QUEUES];
 #else  
@@ -36,8 +35,9 @@ size_t getDRBBufferStatus(struct DRB_queues* drbQ, uint8_t queueIdx);
 
 uint64_t get_DRB_avail(struct DRB_queues* drbQ, uint8_t idx);
 
-size_t getDRBMaxNumberPackets(struct DRB_queues* drbQ, uint8_t queueIdx);
+//size_t getDRBMaxNumberPackets(struct DRB_queues* drbQ, uint8_t queueIdx);
 
+uint32_t getDRBAvailablePackets(struct DRB_queues* drbQ, uint8_t drbIdx);
 
 #endif
 

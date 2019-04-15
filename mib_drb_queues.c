@@ -1,8 +1,18 @@
 #include "mib_time.h"
 #include "mib_drb_queues.h"
+#include "mib_queue.h"
 
 #include <stdlib.h>
-#include "mib_queue.h"
+
+static size_t getDRBMaxNumberPackets(struct DRB_queues* drbQ, uint8_t idx)
+{
+#if DYNAMIC_QUEUE 
+//  return mib_dq_avail(drbQ->dq[idx]);
+	return mib_dq_limit(drbQ->dq[idx]);
+#else
+  return MAX_NUM_PACK_DRB;
+#endif
+}
 
 void init_DRB_queues(struct DRB_queues* drbQ, void(*verdict)(uint32_t, uint32_t, uint32_t), struct stats_t* stats)
 {
@@ -34,12 +44,15 @@ uint64_t get_DRB_avail(struct DRB_queues* drbQ, uint8_t idx)
   return mib_dq_avail(drbQ->dq[idx]);
 }
 
-size_t getDRBMaxNumberPackets(struct DRB_queues* drbQ, uint8_t idx)
+uint32_t getDRBAvailablePackets(struct DRB_queues* drbQ, uint8_t drbIdx)
 {
 #if DYNAMIC_QUEUE 
-  return mib_dq_avail(drbQ->dq[idx]);
+  return mib_dq_avail(drbQ->dq[drbIdx]);
+//	return mib_dq_limit(drbQ->dq[idx]);
 #else
-  return MAX_NUM_PACK_DRB;
+	uint32_t packetsAtDRB = getDRBBufferStatus(drbQ, drbIdx); 
+  uint32_t maxPacAllowed = getDRBMaxNumberPackets(drbQ, drbIdx); 
+	return maxPacAllowed - packetsAtDRB;
 #endif
 }
 
@@ -83,5 +96,4 @@ size_t getDRBBufferStatus(struct DRB_queues* drbQ, uint8_t queueIdx)
   return mib_queue_size(drbQ->queues[queueIdx]);
 #endif
 }
-
 

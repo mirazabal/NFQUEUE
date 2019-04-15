@@ -29,6 +29,11 @@ void mib_dq_release(struct mib_dq* dq)
   free(dq);
 }
 
+uint32_t mib_dq_limit(const struct mib_dq *dq)
+{
+	return dq->limit;
+}
+
 void mib_dq_reset(struct mib_dq* dq)
 {
   dq->num_queued = 0;
@@ -43,14 +48,15 @@ uint64_t mib_dq_avail(const struct mib_dq *dq)
   // num_dequeud + limit can be lower than num_queue just when a new value is assigned to limit 	
   uint64_t maxNumPacAllowed = dq->num_dequeued + dq->limit;
   uint64_t num_queued =  dq->num_queued;
-  printf("dq->num_dequeued = %lu dq->limit =  %lu and num_queued = %lu \n", dq->num_dequeued, dq->limit, num_queued);
-  return POSDIFF( maxNumPacAllowed, num_queued); 
+	uint64_t avail =  POSDIFF( maxNumPacAllowed, num_queued);
+  printf("available packets = %lu, dq->num_dequeued = %lu dq->limit =  %lu and num_queued = %lu \n", avail, dq->num_dequeued, dq->limit, num_queued);
+  return avail;
 }
 
 void mib_dq_enqueued(struct mib_dq* dq, uint64_t count)
 {
   atomic_fetch_add_explicit(&dq->num_queued, count, memory_order_relaxed); 	
-  printf("mib_dq_enqueued =  %lu \n", dq->num_queued);
+//  printf("mib_dq_enqueued =  %lu \n", dq->num_queued);
 }
 
 void mib_dq_dequeued(struct mib_dq* dq, uint64_t count)

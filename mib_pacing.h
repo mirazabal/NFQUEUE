@@ -1,6 +1,7 @@
 #ifndef MIB_PACING
 #define MIB_PACING
 
+#include <stdint.h>
 
 struct mib_pacing
 {

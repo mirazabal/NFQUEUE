@@ -29,5 +29,7 @@ void mib_dq_enqueued(struct mib_dq* dq, uint64_t count);
 
 void mib_dq_dequeued(struct mib_dq* dq, uint64_t count);
 
+uint32_t mib_dq_limit(const struct mib_dq *dq);
+
 #endif //  MIB_DYNAMIC_QUEUE
 

@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include "mib_stats.h"
 
-#define QFI_NUM_QUEUES 8
+#define QFI_NUM_QUEUES 4
 
 
 struct QFI_queues
