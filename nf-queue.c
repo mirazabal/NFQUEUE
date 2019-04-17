@@ -121,7 +121,7 @@ static void add_tcp_ports( struct iphdr* ip_header, char* buffer)
 	strncat(buffer, str_d, sizeof(str_d));
 }
 
-static uint32_t create_hash(struct iphdr* ipHeader)
+static uint32_t create_hash(struct iphdr* ipHeader, uint32_t id)
 {
   if (ipHeader->protocol == IPPROTO_ICMP){
     printf("ICMP packet detected... \n");
@@ -129,7 +129,7 @@ static uint32_t create_hash(struct iphdr* ipHeader)
   }
 
 	if (ipHeader->protocol == IPPROTO_UDP){
-    printf("UDP packet detected at timestamp = %ld \n", mib_get_time_us() );
+    printf("UDP Packet with id = %d, inserted into UPF at timestamp = %ld \n", id, mib_get_time_us() ); 
     return 0;
   }
 
@@ -192,8 +192,8 @@ static int queue_cb(const struct nlmsghdr *nlh, void *data)
 
 	struct iphdr* ipHeader = (struct iphdr *)( mnl_attr_get_payload(attr[NFQA_PAYLOAD]));
 	//print_ip_info(ipHeader);
-	uint32_t hash = create_hash(ipHeader);
-	add_packet_sched_cb( ntohs(nfg->res_id), id, hash);
+	uint32_t hash = create_hash(ipHeader,id);
+	add_packet_sched_cb(ntohs(nfg->res_id), id, hash);
 	return MNL_CB_OK;
 }
 

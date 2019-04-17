@@ -2,6 +2,7 @@
 #include "mib_queue_codel.h"
 #include "mib_queue.h"
 #include "mib_time.h"
+#include "mib_scenario.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -93,7 +94,10 @@ static void drop_packet(struct QueueCodel* queue)
   printf(" dropping packet.. %lu at timestamp %lu \n", queue->packets_dropped , mib_get_time_us()  );
   queue->pTimer.pos = queue->pTimer.pos - 1;
 
+#if QFI_QUEUES_CODEL || DRB_QUEUES_CODEL  
   mib_remove_packet_QFI_DRB(codel_stats);
+#endif
+
 }
 
 

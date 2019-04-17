@@ -3,51 +3,44 @@
 
 #include <stdint.h>
 
-struct mib_pacing
-{
-  uint32_t discrete_time;
-
-};
-
-
-
-
-
 struct mib_rate_estimator
 {
-
-  uint64_t num_queued;
+//	uint64_t num_enqueued_last;
+	uint64_t num_enqueued; 
   uint64_t num_dequeued;
-  uint64_t lowest_slack;
-  uint64_t max_limit;
-  uint64_t min_limit;
+ 	uint64_t num_enqueued_last;
 
-  int64_t slack_start_time;
-  int64_t slack_hold_time;
+//	int64_t slack_start_time;
+	uint32_t period;
+	uint32_t half_period;
 
 
-  uint32_t const discrete_time;
-  uint32_t discrete_time_next_entity;
+//	uint32_t min_val_time;
+//	uint32_t max_val_time; 
 
-  uint32_t number_packets_added;
-  uint32_t number_packets_added_last;
+	uint32_t min_val_pack; 
+	uint32_t max_val_pack; 
 
-  int32_t start_timestamp_us;
-  int32_t start_timestamp_us_last;
+	uint32_t saturation; 
 
-  uint32_t end_timestamp_us;
-  uint8_t saturation_detected;
+	uint32_t opt_occupancy;
+	uint32_t discrete_time_next_entity;
+
+	uint32_t num_ticks;
+	uint32_t discrete_time;
 };
 
-
-void mib_packets_added(struct mib_rate_estimator* est, uint8_t numPackets, int64_t timestamp);
-
+void mib_init_estimator(struct mib_rate_estimator* est);
 
 
+void	mib_pacing_saturation_detected(struct mib_rate_estimator* est);
 
-void mib_rate_dequeue(struct mib_rate_estimator* est, uint8_t numPackets);
+//void mib_packets_added(struct mib_rate_estimator* est, uint8_t numPackets, int64_t timestamp);
 
-void mib_rate_enqueu(struct mib_rate_estimator* est, uint8_t numPackets, int64_t timestamp);
+uint32_t mib_get_optim_occupancy(struct mib_rate_estimator* est);
 
+void mib_rate_dequeue(struct mib_rate_estimator* est, uint32_t numPackets, int64_t timestamp);
+
+void mib_rate_enqueu(struct mib_rate_estimator* est, uint8_t numPackets);
 
 #endif

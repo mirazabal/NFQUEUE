@@ -6,6 +6,7 @@
 #include "mib_qfi_queues.h"
 #include "mib_upf_queues.h"
 #include "mib_scenario.h"
+#include "mib_pacing.h"
 #include "mapper.h"
 
 #include <stdlib.h>
@@ -144,13 +145,19 @@ static void getAvailableQFIQueues(struct QFI_queues* qfiQ, struct ActiveUPFQueue
     uint8_t idx = 0;
     while(idx < activeUPFQueues->numActiveQueues) {
       uint8_t qfiIdx = mib_get_ouput_for_input(map, activeUPFQueues->arrIdx[idx]);
-      uint32_t packetsAtQFI = getQFIBufferStatus(qfiQ, qfiIdx); 
-      uint32_t maxPacketsAllowed = getQFIMaxNumberPackets(qfiQ,qfiIdx); 
-      if(packetsAtQFI >= maxPacketsAllowed){
-        removeActiveQueue(activeUPFQueues, idx);
+			uint32_t availablePac = getQFIAvailablePackets(qfiQ,qfiIdx);
+			if (availablePac == 0){
+
+//      uint32_t packetsAtQFI = getQFIBufferStatus(qfiQ, qfiIdx); 
+//      uint32_t maxPacketsAllowed = getQFIMaxNumberPackets(qfiQ,qfiIdx); 
+
+//      if(packetsAtQFI >= maxPacketsAllowed){
+				removeActiveQueue(activeUPFQueues, idx);
         continue;
       }
-      availablePacketsQFIQueues->size[qfiIdx] =  maxPacketsAllowed - packetsAtQFI;
+      availablePacketsQFIQueues->size[qfiIdx] = availablePac; 
+				
+//				maxPacketsAllowed - packetsAtQFI;
       ++idx;
     }
     availablePacketsQFIQueues->arrSize = idx;
@@ -194,11 +201,12 @@ void* thread_UPF_sched(void* threadData)
     {
       uint8_t qfiIdx = dequePackets[i].qfiIdx;
       struct packet_t *p = dequePackets[i].packet;
-      if(p->UDP_packet == 1){
-        printf("UDP Packet with id = %d, inserted into QFI with total packets QFI+UPF = %lu at timestamp = %ld \n", p->idP, mib_get_total_packets_QFI_DRB(data->stats),  mib_get_time_us() ); 
-      }
       addPacketToQFI(data->qfiQ, qfiIdx, p);
       mib_add_packet_QFI_DRB(data->stats);
+		
+			if(p->UDP_packet == 1){
+        printf("UDP Packet with id = %d, inserted into QFI with total packets QFI+DRB = %lu at timestamp = %ld \n", p->idP, mib_get_total_packets_QFI_DRB(data->stats),  mib_get_time_us() ); 
+			}
     }
   }
   mib_free_mapper(&map);

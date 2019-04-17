@@ -1,8 +1,9 @@
-
 #include "mib_qfi_queues.h"
 #include "mib_queue.h"
 #include "mib_queue_codel.h"
 #include "mib_time.h"
+#include "mib_pacing.h"
+#include "mib_scenario.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -21,6 +22,10 @@ void init_QFI_queues(struct QFI_queues* qfiQ, void(*verdict)(uint32_t, uint32_t,
     qfiQ->maxNumberPackets[i] = MAX_NUM_PACK_QFI; 
     mib_queue_init(qfiQ->queues[i]); 
 #endif
+
+#if QFI_QUEUE_PACER 
+	mib_init_estimator(&qfiQ->est[i]);
+#endif	
   }
 }
 
@@ -46,12 +51,18 @@ void addPacketToQFI(struct QFI_queues* qfiQ, uint8_t queueIdx, struct packet_t* 
 #else
   mib_queue_enqueu(qfiQ->queues[queueIdx],p);
 #endif
+
+#if QFI_QUEUE_PACER 
+	mib_rate_enqueu(&qfiQ->est[queueIdx], 1);
+#endif
 }
 
-struct packet_t* getQFIPacket(struct  QFI_queues* qfiQ, uint8_t queueIdx)
+struct packet_t* getQFIPacket(struct QFI_queues* qfiQ, uint8_t queueIdx)
 {
   assert(qfiQ != NULL);
   assert(queueIdx < QFI_NUM_QUEUES);
+
+
 #if QFI_QUEUES_CODEL
   return mib_queue_codel_deque( qfiQ->queues[queueIdx]);
 #else
@@ -70,14 +81,26 @@ size_t getQFIBufferStatus(struct QFI_queues* qfiQ, uint8_t queueIdx)
 #endif
 }
 
-size_t getQFIMaxNumberPackets(struct QFI_queues* qfiQ, uint8_t queueIdx)
+static inline uint32_t getQFIMaxNumberPackets(struct QFI_queues* qfiQ, uint8_t queueIdx)
 {
-  return qfiQ->maxNumberPackets[queueIdx];
+#if QFI_QUEUE_PACER 
+	return mib_get_optim_occupancy(&qfiQ->est[queueIdx]);
+#else
+	return qfiQ->maxNumberPackets[queueIdx];
+#endif 	
+}
+
+
+uint32_t getQFIAvailablePackets(struct QFI_queues* qfiQ, uint8_t qfiIdx)
+{
+	uint32_t packetsAtQFI = getQFIBufferStatus(qfiQ, qfiIdx); 
+  uint32_t maxPacAllowed = getQFIMaxNumberPackets(qfiQ, qfiIdx); 
+	
+	return maxPacAllowed < packetsAtQFI ? 0 : maxPacAllowed - packetsAtQFI;
 }
 
 void setQFIMaxNumberPackets(struct QFI_queues* qfiQ, uint8_t queueIdx, size_t numPackets)
 {
   qfiQ->maxNumberPackets[queueIdx] = numPackets;
 }
-
 

@@ -4,6 +4,7 @@
 #include "mib_time.h"
 
 #include <stdlib.h>
+#include <stdio.h>
 
 void init_UPF_queues(struct UPF_queues* upfQ, void(*verdict)(uint32_t, uint32_t, uint32_t), struct stats_t* stats)
 {
@@ -38,8 +39,11 @@ void addPacketToUPF(struct UPF_queues* upfQ, uint8_t queueIdx, uint32_t id)
   struct packet_t *p = malloc(sizeof(struct packet_t));	
   p->idP = id;
   p->arrival_UPF = mib_get_time_us();
-  if(queueIdx == 0)
+  if(queueIdx == 0){
     p->UDP_packet = 1;
+		uint32_t bufferSize = getUPFBufferStatus(upfQ, queueIdx); 
+    printf("UDP Packet with id = %d, with a UPF queue size = %d, inserted into UPF at timestamp = %ld \n", id, bufferSize, p->arrival_UPF); 
+	}
   else
     p->UDP_packet = 0;
 

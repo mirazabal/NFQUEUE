@@ -29,6 +29,7 @@ struct QueueCodel
 
   uint32_t interval_; // = 200000;// <>  TARGET =  MS2TIME(5);// 5ms TARGET queue delay
   uint32_t target_; // = 10000;
+
 };
 
 void mib_queue_codel_init(struct QueueCodel*, void(*verdict)(uint32_t, uint32_t, uint32_t), struct stats_t*);

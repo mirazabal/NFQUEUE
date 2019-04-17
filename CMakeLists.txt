@@ -3,7 +3,7 @@ project (5G_QoS C)
 
 ENABLE_TESTING()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-unknown-pragmas")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-unknown-pragmas ")
 
 #option(USE_ARM "build application with ARM" ON) # OFF is the defaut
 
@@ -68,6 +68,16 @@ endif(FIRST_7th_f)
 if(FIRST_8th_f)
   add_definitions(-DFIRST_8th=1)
 endif(FIRST_8th_f)
+
+if(FIRST_9th_f)
+  add_definitions(-DFIRST_9th=1)
+endif(FIRST_9th_f)
+
+if(FIRST_10th_f)
+  add_definitions(-DFIRST_10th=1)
+endif(FIRST_10th_f)
+
+
 
 #SET(CMAKE_SHARED_LINKER_FLAGS="-fprofile-arcs -ftest-coverage")
 #SET(CMAKE_EXE_LINKER_FLAGS="-fprofile-arcs -ftest-coverage")

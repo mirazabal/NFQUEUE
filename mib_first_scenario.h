@@ -4,6 +4,7 @@
 #if FIRST_1st
 	#define FIRST_SCENARIO 1
 	#define UPF_SCHED_TICK 1000
+	#define SDAP_SCHED_TICK 1000
 	#define UPF_QUEUES_CODEL 0
 	#define QFI_QUEUES_CODEL 0
 	#define DRB_QUEUES_CODEL 0
@@ -15,6 +16,7 @@
 #if FIRST_2nd_10 
 	#define FIRST_SCENARIO 1
 	#define UPF_SCHED_TICK 1000
+	#define SDAP_SCHED_TICK 1000
 	#define UPF_QUEUES_CODEL 0
 	#define QFI_QUEUES_CODEL 0
 	#define DRB_QUEUES_CODEL 0
@@ -23,10 +25,10 @@
 	#define MAX_NUM_PACK_QFI 1024
 #endif
 
-
 #if FIRST_2nd_20 
 	#define FIRST_SCENARIO 1
 	#define UPF_SCHED_TICK 1000
+	#define SDAP_SCHED_TICK 1000
 	#define UPF_QUEUES_CODEL 0
 	#define QFI_QUEUES_CODEL 0
 	#define DRB_QUEUES_CODEL 0
@@ -38,6 +40,7 @@
 #if FIRST_2nd_30 
 	#define FIRST_SCENARIO 1
 	#define UPF_SCHED_TICK 1000
+	#define SDAP_SCHED_TICK 1000
 	#define UPF_QUEUES_CODEL 0
 	#define QFI_QUEUES_CODEL 0
 	#define DRB_QUEUES_CODEL 0
@@ -49,6 +52,7 @@
 #if FIRST_3rd 
 	#define FIRST_SCENARIO 1
 	#define UPF_SCHED_TICK 1000
+	#define SDAP_SCHED_TICK 1000
 	#define UPF_QUEUES_CODEL 0
 	#define QFI_QUEUES_CODEL 0
 	#define DRB_QUEUES_CODEL 1
@@ -60,6 +64,7 @@
 #if FIRST_4th_10 
 	#define FIRST_SCENARIO 1
 	#define UPF_SCHED_TICK 1000
+	#define SDAP_SCHED_TICK 1000
 	#define UPF_QUEUES_CODEL 0
 	#define QFI_QUEUES_CODEL 1
 	#define DRB_QUEUES_CODEL 0
@@ -71,6 +76,7 @@
 #if FIRST_4th_20 
 	#define FIRST_SCENARIO 1
 	#define UPF_SCHED_TICK 1000
+	#define SDAP_SCHED_TICK 1000
 	#define UPF_QUEUES_CODEL 0
 	#define QFI_QUEUES_CODEL 1
 	#define DRB_QUEUES_CODEL 0
@@ -82,6 +88,7 @@
 #if FIRST_4th_30 
 	#define FIRST_SCENARIO 1
 	#define UPF_SCHED_TICK 1000
+	#define SDAP_SCHED_TICK 1000
 	#define UPF_QUEUES_CODEL 0
 	#define QFI_QUEUES_CODEL 1
 	#define DRB_QUEUES_CODEL 0
@@ -93,6 +100,7 @@
 #if FIRST_5th 
 	#define FIRST_SCENARIO 1
 	#define UPF_SCHED_TICK 10500
+	#define SDAP_SCHED_TICK 1000
 	#define UPF_QUEUES_CODEL 1
 	#define QFI_QUEUES_CODEL 0
 	#define DRB_QUEUES_CODEL 0
@@ -104,6 +112,7 @@
 #if FIRST_6th 
 	#define FIRST_SCENARIO 1
 	#define UPF_SCHED_TICK 1000
+	#define SDAP_SCHED_TICK 1000
 	#define UPF_QUEUES_CODEL 0
 	#define QFI_QUEUES_CODEL 1
 	#define DRB_QUEUES_CODEL 0
@@ -115,6 +124,7 @@
 #if FIRST_7th 
 	#define FIRST_SCENARIO 1
 	#define UPF_SCHED_TICK 1000
+	#define SDAP_SCHED_TICK 1000
 	#define UPF_QUEUES_CODEL 0
 	#define QFI_QUEUES_CODEL 0
 	#define DRB_QUEUES_CODEL 0
@@ -125,14 +135,41 @@
 
 #if FIRST_8th 
 	#define FIRST_SCENARIO 1
-	#define UPF_SCHED_TICK 1000
-	#define UPF_QUEUES_CODEL 0
+	#define UPF_SCHED_TICK 700
+	#define SDAP_SCHED_TICK 700
+	#define UPF_QUEUES_CODEL 1
 	#define QFI_QUEUES_CODEL 0
 	#define DRB_QUEUES_CODEL 0
 	#define DYNAMIC_QUEUE 0
 	#define MAX_NUM_PACK_DRB 10
 	#define MAX_NUM_PACK_QFI 1
+	#define QFI_QUEUE_PACER 0
 #endif
 
+#if FIRST_9th 
+	#define FIRST_SCENARIO 1
+	#define UPF_SCHED_TICK 1000
+	#define SDAP_SCHED_TICK 1000
+	#define UPF_QUEUES_CODEL 0
+	#define QFI_QUEUES_CODEL 0
+	#define DRB_QUEUES_CODEL 0
+	#define DYNAMIC_QUEUE 0
+	#define MAX_NUM_PACK_DRB 10
+	#define MAX_NUM_PACK_QFI 1024
+	#define QFI_QUEUE_PACER 1
+#endif
+
+#if FIRST_10th 
+	#define FIRST_SCENARIO 1
+	#define UPF_SCHED_TICK 1000
+	#define SDAP_SCHED_TICK 1000
+	#define UPF_QUEUES_CODEL 0
+	#define QFI_QUEUES_CODEL 0
+	#define DRB_QUEUES_CODEL 0
+	#define DYNAMIC_QUEUE 1
+	#define MAX_NUM_PACK_DRB 1024
+	#define MAX_NUM_PACK_QFI 1024
+	#define QFI_QUEUE_PACER 1
+#endif
 
 #endif
