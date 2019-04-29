@@ -16,7 +16,7 @@
 #define FIRST_7th 0
 #define FIRST_8th 1
 */
-
+/*
 #define SECOND_1st 0
 #define SECOND_2nd_10 0
 #define SECOND_2nd_20 0
@@ -29,7 +29,7 @@
 #define SECOND_6th 0
 #define SECOND_7th 0 
 #define SECOND_8th 0
-
+*/
 #include "mib_first_scenario.h"
 #include "mib_second_scenario.h"
 

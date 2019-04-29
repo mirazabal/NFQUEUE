@@ -6,6 +6,7 @@
 #include "mib_qfi_queues.h"
 #include "mib_upf_queues.h"
 #include "mib_scenario.h"
+#include "mib_realtime_prio.h"
 #include "mib_pacing.h"
 #include "mapper.h"
 
@@ -163,20 +164,9 @@ static void getAvailableQFIQueues(struct QFI_queues* qfiQ, struct ActiveUPFQueue
     availablePacketsQFIQueues->arrSize = idx;
 }
 
-static void set_realtime_priority()
-{
-  pthread_t this_thread = pthread_self();
-  struct sched_param params;
-  params.sched_priority = sched_get_priority_max(SCHED_RR) - 10;
-  int ret = pthread_setschedparam(this_thread, SCHED_RR, &params);
-  if(ret != 0){
-    printf("Error while setting the priority of the SDAP thread \n");
-  }
-}
-
 void* thread_UPF_sched(void* threadData)
 {
-  set_realtime_priority();
+  mib_set_realtime_priority(sched_get_priority_max(SCHED_RR) - 10);
   struct UPF_thread_data* data = (struct UPF_thread_data*)threadData;
   struct packetAndQueue dequePackets[UPF_NUM_PACKETS_PER_TICK];
 

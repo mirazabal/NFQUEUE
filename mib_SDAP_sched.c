@@ -3,6 +3,7 @@
 #include "mib_scenario.h"
 #include "mib_SDAP_sched.h"
 #include "mib_qfi_queues.h"
+#include "mib_realtime_prio.h"
 #include "mib_time.h"
 #include "mapper.h"
 
@@ -177,17 +178,6 @@ void close_SDAP_thread()
 	endThread = 0;
 }
 
-static void set_realtime_priority()
-{
-	pthread_t this_thread = pthread_self();
-	struct sched_param params;
-	params.sched_priority = sched_get_priority_max(SCHED_RR) - 10;
-	int ret = pthread_setschedparam(this_thread, SCHED_RR, &params);
-	if(ret != 0){
-		printf("Error while setting the priority of the SDAP thread \n");
-	}
-}
-
 static void init_mapper(struct mib_mapper* map)
 {
 	mib_init_mapper(map, QFI_NUM_QUEUES, DRB_NUM_QUEUES);	
@@ -198,7 +188,7 @@ static void init_mapper(struct mib_mapper* map)
 
 void* thread_SDAP_sched(void *threadData)
 {
-	set_realtime_priority();
+	mib_set_realtime_priority(sched_get_priority_max(SCHED_RR) - 10);
 	struct SDAP_thread_data* data = (struct SDAP_thread_data*)threadData;
 	struct packetAndQueue dequePackets[SDAP_NUM_PACKETS_PER_TICK];
 

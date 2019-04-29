@@ -81,8 +81,10 @@ void mib_dq_dequeued(struct mib_dq* dq, uint64_t count)
 
   printf("limit reached = %d  and remaining data =  %lu with count = %lu  \n", limit_reached ,remaining_data, count);
   if(limit_reached && !remaining_data){
-    const float sqrt_2 = 1.41;
-    limit =  sqrt_2 * limit;	
+    //const float sqrt_2 = 1.41;
+		// limit =  sqrt_2 * limit;	
+    const float increase_factor = 1.2;
+		limit = increase_factor * limit;
     dq->slack_start_time = mib_get_time_us();	
     dq->lowest_slack = UINT_MAX;
   } else if(remaining_data){

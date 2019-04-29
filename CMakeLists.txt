@@ -10,8 +10,6 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-unknown-pragmas ")
 #	add_definitions(-DFAKE_CAMERA)
 
 include_directories(${SOURCE_DIR})
-#include_directories(${Node_SOURCE_DIR}/include)
-#include_directories(${Node_SOURCE_DIR}/include/jpeg)
 
 file(GLOB SRC
     "*.h"
@@ -77,7 +75,63 @@ if(FIRST_10th_f)
   add_definitions(-DFIRST_10th=1)
 endif(FIRST_10th_f)
 
+###### Second Scenario
 
+if(SECOND_1st_f)
+	add_definitions(-DSECOND_1st=1)
+endif(SECOND_1st_f)
+
+if(SECOND_2nd_10_f)
+	add_definitions(-DSECOND_2nd_10=1)
+endif(SECOND_2nd_10_f)
+
+if(SECOND_2nd_20_f)
+	add_definitions(-DSECOND_2nd_20=1)
+endif(SECOND_2nd_20_f)
+
+if(SECOND_2nd_30_f)
+	add_definitions(-DSECOND_2nd_30=1)
+endif(SECOND_2nd_30_f)
+
+if(SECOND_3rd_f)
+	add_definitions(-DSECOND_3rd=1)
+endif(SECOND_3rd_f)
+
+if(SECOND_4th_10_f)
+	add_definitions(-DSECOND_4th_10=1)
+endif(SECOND_4th_10_f)
+
+if(SECOND_4th_20_f)
+	add_definitions(-DSECOND_4th_20=1)
+endif(SECOND_4th_20_f)
+
+if(SECOND_4th_30_f)
+	add_definitions(-DSECOND_4th_30=1)
+endif(SECOND_4th_30_f)
+
+if(SECOND_5th_f)
+	add_definitions(-DSECOND_5th=1)
+endif(SECOND_5th_f)
+
+if(SECOND_6th_f)
+	add_definitions(-DSECOND_6th=1)
+endif(SECOND_6th_f)
+
+if(SECOND_7th_f)
+	add_definitions(-DSECOND_7th=1)
+endif(SECOND_7th_f)
+
+if(SECOND_8th_f)
+	add_definitions(-DSECOND_8th=1)
+endif(SECOND_8th_f)
+
+if(SECOND_9th_f)
+	add_definitions(-DSECOND_9th=1)
+endif(SECOND_9th_f)
+
+if(SECOND_10th_f)
+	add_definitions(-DSECOND_10th=1)
+endif(SECOND_10th_f)
 
 #SET(CMAKE_SHARED_LINKER_FLAGS="-fprofile-arcs -ftest-coverage")
 #SET(CMAKE_EXE_LINKER_FLAGS="-fprofile-arcs -ftest-coverage")
