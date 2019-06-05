@@ -5,6 +5,7 @@
 #include "mib_scenario.h"
 #include "mib_stats.h"
 #include "mib_pacing.h"
+#include "mib_cqi_pacer.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -21,7 +22,11 @@ struct QFI_queues
  
 #if QFI_QUEUE_PACER 
 	struct mib_rate_estimator est[QFI_NUM_QUEUES];
+#elif CQI_PACER
+      struct mib_cqi_pacer pacer[QFI_NUM_QUEUES];
 #endif
+
+
 
 size_t maxNumberPackets[QFI_NUM_QUEUES];
 };

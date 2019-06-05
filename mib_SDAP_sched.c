@@ -6,6 +6,7 @@
 #include "mib_realtime_prio.h"
 #include "mib_time.h"
 #include "mapper.h"
+#include "mib_cqi_pacer.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +18,10 @@
 
 static const int forwardPacket = 1;
 static int endThread = 1;
+
+#if CQI_PACER
+static struct QFI_queues* static_qfiQ;
+#endif
 //static const uint64_t maxNumberPacketsDRB = MAX_NUM_PACK_DRB; 
 
 struct packetAndQueue
@@ -173,6 +178,14 @@ static void getAvailableDRBQueues(struct QFI_queues* qfiQ, struct DRB_queues* dr
 	availablePacketsDRBQueues->arrSize = idx;
 }
 
+#if CQI_PACER
+void  mib_send_data_SDAP(uint32_t numPackets)
+{
+  const uint32_t QFI_QUEUE = 0;
+  mib_cqi_pacer_set( &static_qfiQ->pacer[QFI_QUEUE] , numPackets,  mib_queue_size(static_qfiQ->queues[QFI_QUEUE]));
+}
+#endif
+
 void close_SDAP_thread()
 {
 	endThread = 0;
@@ -201,6 +214,9 @@ void* thread_SDAP_sched(void *threadData)
 
 	struct QFI_queues* qfiQ = data->qfiQ;
 	struct DRB_queues* drbQ = data->drbQ;
+#if CQI_PACER
+        static_qfiQ = data->qfiQ;
+#endif
 
 	// const uint8_t DRB_QUEUE_IDX = 0;
 	while(endThread){

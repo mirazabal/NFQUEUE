@@ -79,6 +79,10 @@ if(FIRST_11th_f)
   add_definitions(-DFIRST_11th=1)
 endif(FIRST_11th_f)
 
+if(FIRST_12th_f)
+  add_definitions(-DFIRST_12th=1)
+endif(FIRST_12th_f)
+
 ###### Second Scenario
 
 if(SECOND_1st_f)

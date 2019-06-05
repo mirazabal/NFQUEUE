@@ -144,6 +144,10 @@ void* thread_MAC_sched(void* threadData)
 #if DYN_RADIO_CHANNEL
   ++num_loop;
 #endif    
+
+#if CQI_PACER
+    mib_send_data_SDAP(numPackets);
+#endif
   }
   return NULL;
 }
