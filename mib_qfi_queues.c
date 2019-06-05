@@ -27,6 +27,7 @@ void init_QFI_queues(struct QFI_queues* qfiQ, void(*verdict)(uint32_t, uint32_t,
 #if QFI_QUEUE_PACER 
 	mib_init_estimator(&qfiQ->est[i]);
 #endif	
+
   }
 }
 

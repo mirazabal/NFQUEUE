@@ -75,6 +75,10 @@ if(FIRST_10th_f)
   add_definitions(-DFIRST_10th=1)
 endif(FIRST_10th_f)
 
+if(FIRST_11th_f)
+  add_definitions(-DFIRST_11th=1)
+endif(FIRST_11th_f)
+
 ###### Second Scenario
 
 if(SECOND_1st_f)
