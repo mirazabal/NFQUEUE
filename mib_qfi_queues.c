@@ -4,6 +4,7 @@
 #include "mib_time.h"
 #include "mib_pacing.h"
 #include "mib_scenario.h"
+#include "mib_drb_queues.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -45,6 +46,9 @@ void addPacketToQFI(struct QFI_queues* qfiQ, uint8_t queueIdx, struct packet_t* 
   uint32_t packetsAtQFI = getQFIBufferStatus(qfiQ, queueIdx); 
   p->packets_QFI = packetsAtQFI;
   p->arrival_QFI = mib_get_time_us();
+
+  uint32_t packetsAtDRB_0 = getDRB_0_BufferStatus();
+  p->packets_total = packetsAtQFI + packetsAtDRB_0;
 
 #if QFI_QUEUES_CODEL
   mib_queue_codel_enqueu(qfiQ->queues[queueIdx],p);

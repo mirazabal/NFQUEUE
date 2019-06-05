@@ -9,7 +9,7 @@ struct packet_t
   int64_t arrival_QFI;
   uint64_t packets_QFI;
   int64_t arrival_DRB;
-  uint64_t packets_DRB;
+  uint64_t packets_total;
   uint32_t idP;
   uint8_t UDP_packet;
 };

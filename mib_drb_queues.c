@@ -3,6 +3,10 @@
 #include "mib_queue.h"
 
 #include <stdlib.h>
+#include <stdatomic.h>
+
+static _Atomic uint32_t pac_enq = 0;
+static _Atomic uint32_t pac_deq = 0;
 
 static size_t getDRBMaxNumberPackets(struct DRB_queues* drbQ, uint8_t idx)
 {
@@ -62,9 +66,12 @@ void addPacketToDRB(struct DRB_queues* drbQ, uint8_t queueIdx, struct packet_t* 
   assert(drbQ->queues[queueIdx] != NULL);
   assert(queueIdx < DRB_NUM_QUEUES);
 
-  uint32_t packetsAtDRB = getDRBBufferStatus(drbQ, queueIdx); 
-  p->packets_DRB = packetsAtDRB;
+  //uint32_t packetsAtDRB = getDRBBufferStatus(drbQ, queueIdx); 
+  //p->packets_DRB = packetsAtDRB;
   p->arrival_DRB = mib_get_time_us();
+
+  if(queueIdx == 0)
+       pac_enq++;
 
 #if DRB_QUEUES_CODEL
   mib_queue_codel_enqueu(drbQ->queues[queueIdx],p);
@@ -78,6 +85,10 @@ struct packet_t* getDRBPacket(struct DRB_queues* drbQ, uint8_t  queueIdx)
   assert(drbQ != NULL);
   assert(drbQ->queues[queueIdx] != NULL);
 //	mib_dq_dequeued(drbQ->dq,1);
+
+  if(queueIdx == 0)
+    pac_deq++;
+
 #if DRB_QUEUES_CODEL
   return mib_queue_codel_deque(drbQ->queues[queueIdx]);
 #else	
@@ -97,3 +108,9 @@ size_t getDRBBufferStatus(struct DRB_queues* drbQ, uint8_t queueIdx)
 #endif
 }
 
+
+
+uint32_t getDRB_0_BufferStatus(void)
+{
+     return pac_enq - pac_deq;
+}

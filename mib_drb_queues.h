@@ -35,9 +35,10 @@ size_t getDRBBufferStatus(struct DRB_queues* drbQ, uint8_t queueIdx);
 
 uint64_t get_DRB_avail(struct DRB_queues* drbQ, uint8_t idx);
 
-//size_t getDRBMaxNumberPackets(struct DRB_queues* drbQ, uint8_t queueIdx);
-
 uint32_t getDRBAvailablePackets(struct DRB_queues* drbQ, uint8_t drbIdx);
+
+// delete this function ASAP
+uint32_t getDRB_0_BufferStatus(void);
 
 #endif
 
