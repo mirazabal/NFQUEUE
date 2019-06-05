@@ -11,6 +11,7 @@
 	#define DYNAMIC_QUEUE 0
 	#define MAX_NUM_PACK_DRB 1024
 	#define MAX_NUM_PACK_QFI 1024
+        #define DYN_RADIO_CHANNEL 1
 #endif
 
 #if FIRST_2nd_10 
@@ -23,6 +24,7 @@
 	#define DYNAMIC_QUEUE 0
 	#define MAX_NUM_PACK_DRB 10
 	#define MAX_NUM_PACK_QFI 1024
+        #define DYN_RADIO_CHANNEL 1
 #endif
 
 #if FIRST_2nd_20 
@@ -35,6 +37,7 @@
 	#define DYNAMIC_QUEUE 0
 	#define MAX_NUM_PACK_DRB 20
 	#define MAX_NUM_PACK_QFI 1024
+        #define DYN_RADIO_CHANNEL 1
 #endif
 
 #if FIRST_2nd_30 
@@ -47,6 +50,7 @@
 	#define DYNAMIC_QUEUE 0
 	#define MAX_NUM_PACK_DRB 30
 	#define MAX_NUM_PACK_QFI 1024
+        #define DYN_RADIO_CHANNEL 1
 #endif
 
 #if FIRST_3rd 
@@ -59,6 +63,7 @@
 	#define DYNAMIC_QUEUE 0
 	#define MAX_NUM_PACK_DRB 1024
 	#define MAX_NUM_PACK_QFI 1024
+        #define DYN_RADIO_CHANNEL 1
 #endif
 
 #if FIRST_4th_10 
@@ -71,6 +76,7 @@
 	#define DYNAMIC_QUEUE 0
 	#define MAX_NUM_PACK_DRB 10
 	#define MAX_NUM_PACK_QFI 1024
+        #define DYN_RADIO_CHANNEL 1
 #endif
 
 #if FIRST_4th_20 
@@ -83,6 +89,7 @@
 	#define DYNAMIC_QUEUE 0
 	#define MAX_NUM_PACK_DRB 20
 	#define MAX_NUM_PACK_QFI 1024
+        #define DYN_RADIO_CHANNEL 1
 #endif
 
 #if FIRST_4th_30 
@@ -95,6 +102,7 @@
 	#define DYNAMIC_QUEUE 0
 	#define MAX_NUM_PACK_DRB 30
 	#define MAX_NUM_PACK_QFI 1024
+        #define DYN_RADIO_CHANNEL 1
 #endif
 
 #if FIRST_5th 
@@ -107,6 +115,7 @@
 	#define DYNAMIC_QUEUE 0
 	#define MAX_NUM_PACK_DRB 1024
 	#define MAX_NUM_PACK_QFI 1024
+        #define DYN_RADIO_CHANNEL 1
 #endif
 
 #if FIRST_6th 
@@ -119,6 +128,7 @@
 	#define DYNAMIC_QUEUE 1
 	#define MAX_NUM_PACK_DRB 1024
 	#define MAX_NUM_PACK_QFI 1024
+        #define DYN_RADIO_CHANNEL 1
 #endif
 
 #if FIRST_7th 
@@ -131,6 +141,7 @@
 	#define DYNAMIC_QUEUE 0
 	#define MAX_NUM_PACK_DRB 1024
 	#define MAX_NUM_PACK_QFI 1024
+        #define DYN_RADIO_CHANNEL 1
 #endif
 
 #if FIRST_8th 
@@ -144,6 +155,7 @@
 	#define MAX_NUM_PACK_DRB 10
 	#define MAX_NUM_PACK_QFI 1
 	#define QFI_QUEUE_PACER 0
+        #define DYN_RADIO_CHANNEL 1
 #endif
 
 #if FIRST_9th 
@@ -157,6 +169,7 @@
 	#define MAX_NUM_PACK_DRB 10
 	#define MAX_NUM_PACK_QFI 1024
 	#define QFI_QUEUE_PACER 1
+        #define DYN_RADIO_CHANNEL 1
 #endif
 
 #if FIRST_10th 
@@ -170,6 +183,7 @@
 	#define MAX_NUM_PACK_DRB 1024
 	#define MAX_NUM_PACK_QFI 1024
 	#define QFI_QUEUE_PACER 1
+        #define DYN_RADIO_CHANNEL 1
 #endif
 
 #endif

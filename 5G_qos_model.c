@@ -10,6 +10,8 @@
 #include "mib_SDAP_sched.h"
 #include "mib_MAC_sched.h"
 
+#include "mib_read_chan.h"
+
 #include "mib_stats.h"
 
 static int const NFQUEUE_NUM = 0;
@@ -60,6 +62,9 @@ static void init_threads_data(void(*verdict)(uint32_t, uint32_t, uint32_t))
   mac_data.send_verdict_cb = verdict;
   mac_data.drbQ = &drb_queues;
   mac_data.stats = &stats;
+#if DYN_RADIO_CHANNEL
+      mac_data.dyn_chan_data = read_channel_data("/home/mikel/workspace/NFQUEUE/scripts/packets.txt");
+#endif 
 }
 
 void init_5G_qos_model(void(*verdict)(uint32_t, uint32_t, uint32_t))

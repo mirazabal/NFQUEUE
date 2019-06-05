@@ -87,48 +87,65 @@ void close_MAC_thread()
   endThread = 0;
 }
 
+#if DYN_RADIO_CHANNEL
+static uint32_t num_loop = 0;
+static uint8_t get_num_packets(uint32_t num_loop, struct data_arr* arr)
+{
+  uint32_t index = num_loop/100;
+  return arr->data[index];
+}
+#endif
+
+
 void* thread_MAC_sched(void* threadData)
 {
   struct MAC_thread_data* data = (struct MAC_thread_data*)threadData;   
-	struct packetAndQueue dequePackets[MAC_NUM_PACKETS_PER_TICK];
-	int arrActiveQueues[DRB_NUM_QUEUES];
-	reset_active_queues(arrActiveQueues);
+  struct packetAndQueue dequePackets[MAC_NUM_PACKETS_PER_TICK];
+  int arrActiveQueues[DRB_NUM_QUEUES];
+  reset_active_queues(arrActiveQueues);
 
-	while(endThread){
-		usleep(10000);
+  while(endThread){
+    usleep(10000);
     sched_yield();
 
-		uint8_t numPackets = MAC_NUM_PACKETS_PER_TICK;
-		uint8_t numActQueues = getActiveDRBQueues(data->drbQ,arrActiveQueues);
-		uint8_t numPacSel = selectDRBPacket(data->drbQ, numActQueues, dequePackets, numPackets, arrActiveQueues);
+#if DYN_RADIO_CHANNEL
+    uint8_t numPackets = get_num_packets(num_loop, &data->dyn_chan_data); 
+#else
+    uint8_t numPackets = MAC_NUM_PACKETS_PER_TICK;
+#endif 
 
-		uint64_t pacDeq = 0;
-		for(uint8_t i = 0; i < numPacSel; ++i)
-		{
-			struct packet_t* p = dequePackets[i].packet;
+    uint8_t numActQueues = getActiveDRBQueues(data->drbQ,arrActiveQueues);
+    uint8_t numPacSel = selectDRBPacket(data->drbQ, numActQueues, dequePackets, numPackets, arrActiveQueues);
+
+    uint64_t pacDeq = 0;
+    for(uint8_t i = 0; i < numPacSel; ++i)
+    {
+      struct packet_t* p = dequePackets[i].packet;
       data->send_verdict_cb(data->NFQUEUE_NUM, (*dequePackets[i].packet).idP,forwardPacket);
-			
-			mib_remove_packet_QFI_DRB(data->stats);
 
-			int64_t now = mib_get_time_us();
+      mib_remove_packet_QFI_DRB(data->stats);
 
-			if(p->UDP_packet == 1){
-				printf("UDP Packet with id = %d, was at the queue UPF = %ld, at QFI = %ld and at DRB = %ld for a total of %ld at timestamp = %ld with packets at QFI = %ld and packets at DRB = %ld \n", p->idP, p->arrival_QFI - p->arrival_UPF, p->arrival_DRB - p->arrival_QFI, now - p->arrival_DRB, now - p->arrival_UPF , now, p->packets_QFI, p->packets_DRB); 
-			}
-			else{
-				printf("TCP Packet with id = %d, was at the queue UPF = %ld, at QFI = %ld and at DRB = %ld for a total of %ld at timestamp = %ld with packets at QFI = %ld and packets at DRB = %ld \n", p->idP, p->arrival_QFI - p->arrival_UPF, p->arrival_DRB - p->arrival_QFI, now - p->arrival_DRB, now - p->arrival_UPF , now, p->packets_QFI, p->packets_DRB); 
-			}
+      int64_t now = mib_get_time_us();
+
+      if(p->UDP_packet == 1){
+        printf("UDP Packet with id = %d, was at the queue UPF = %ld, at QFI = %ld and at DRB = %ld for a total of %ld at timestamp = %ld with packets at QFI = %ld and packets at DRB = %ld \n", p->idP, p->arrival_QFI - p->arrival_UPF, p->arrival_DRB - p->arrival_QFI, now - p->arrival_DRB, now - p->arrival_UPF , now, p->packets_QFI, p->packets_DRB); 
+      }
+      else{
+        printf("TCP Packet with id = %d, was at the queue UPF = %ld, at QFI = %ld and at DRB = %ld for a total of %ld at timestamp = %ld with packets at QFI = %ld and packets at DRB = %ld \n", p->idP, p->arrival_QFI - p->arrival_UPF, p->arrival_DRB - p->arrival_QFI, now - p->arrival_DRB, now - p->arrival_UPF , now, p->packets_QFI, p->packets_DRB); 
+      }
 
       free(dequePackets[i].packet);	
-			++pacDeq;
-		}
-
-		printf("Packets deque at MAC scheduler = %lu at timestamp = %ld \n", pacDeq, mib_get_time_us()); 
-		assert(pacDeq < MAC_NUM_PACKETS_PER_TICK + 1);
+      ++pacDeq;
+    }
+  printf("Packets deque at MAC scheduler = %lu from a maximum possible of = %u at timestamp = %ld \n", pacDeq, numPackets, mib_get_time_us()); 
+    assert(pacDeq < numPackets + 1);
 #if DYNAMIC_QUEUE
-		mib_dq_dequeued(data->drbQ->dq[0], pacDeq);
+    mib_dq_dequeued(data->drbQ->dq[0], pacDeq);
 #endif
-	}
+#if DYN_RADIO_CHANNEL
+  ++num_loop;
+#endif    
+  }
   return NULL;
 }
 
