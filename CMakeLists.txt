@@ -79,10 +79,6 @@ if(FIRST_11th_f)
   add_definitions(-DFIRST_11th=1)
 endif(FIRST_11th_f)
 
-if(FIRST_12th_f)
-  add_definitions(-DFIRST_12th=1)
-endif(FIRST_12th_f)
-
 ###### Second Scenario
 
 if(SECOND_1st_f)
@@ -140,6 +136,11 @@ endif(SECOND_9th_f)
 if(SECOND_10th_f)
 	add_definitions(-DSECOND_10th=1)
 endif(SECOND_10th_f)
+
+if(SECOND_11th_f)
+	add_definitions(-DSECOND_11th=1)
+endif(SECOND_11th_f)
+
 
 #SET(CMAKE_SHARED_LINKER_FLAGS="-fprofile-arcs -ftest-coverage")
 #SET(CMAKE_EXE_LINKER_FLAGS="-fprofile-arcs -ftest-coverage")

@@ -1,6 +1,8 @@
 #include "mib_cqi_pacer.h"
 #include "mib_time.h"
 
+#include <stdio.h>
+
 static uint32_t mib_clamp(struct mib_cqi_pacer* p, float value)
 {
   return value > p->max_val_pack ? p->max_val_pack : value < p->min_val_pack ? p->min_val_pack : value;
@@ -8,6 +10,7 @@ static uint32_t mib_clamp(struct mib_cqi_pacer* p, float value)
 
 void mib_cqi_pacer_set(struct mib_cqi_pacer* p, uint32_t channel_buffer, uint32_t remaining)
 {
+  printf("Into mib_cqi_pacer_set, channel_buffer = %u, remaining = %u \n",channel_buffer, remaining);
   p->remaining_to_send = channel_buffer > remaining ? channel_buffer - remaining : 0;
   p->pack_to_send = p->remaining_to_send;
   p->slack_last_time = mib_get_time_us();
@@ -26,6 +29,7 @@ uint32_t mib_cqi_pacer_get_opt(struct mib_cqi_pacer* p)
   } else {
     ret_val = p->remaining_to_send;
   }
+  printf("Into mib_cqi_pacer_get_opt, ret_val = %u,  remaining = %u \n", ret_val, p->remaining_to_send);
   return ret_val;
 }
 
@@ -45,6 +49,7 @@ void mib_cqi_pacer_init(struct mib_cqi_pacer* p)
 void mib_cqi_pacer_enqueue(struct mib_cqi_pacer* p, uint32_t number)
 {
   p->remaining_to_send -= number;
+  printf("Into mib_cqi_pacer_enqueue number = %u,  remaining = %u \n", number, p->remaining_to_send);
 }
 
 

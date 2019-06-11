@@ -179,7 +179,7 @@ static void getAvailableDRBQueues(struct QFI_queues* qfiQ, struct DRB_queues* dr
 }
 
 #if CQI_PACER
-void  mib_send_data_SDAP(uint32_t numPackets)
+void mib_send_data_SDAP(uint32_t numPackets)
 {
   const uint32_t QFI_QUEUE = 0;
   mib_cqi_pacer_set( &static_qfiQ->pacer[QFI_QUEUE] , numPackets,  mib_queue_size(static_qfiQ->queues[QFI_QUEUE]));

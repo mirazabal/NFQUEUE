@@ -146,20 +146,6 @@
 
 #if FIRST_8th 
 	#define FIRST_SCENARIO 1
-	#define UPF_SCHED_TICK 700
-	#define SDAP_SCHED_TICK 700
-	#define UPF_QUEUES_CODEL 1
-	#define QFI_QUEUES_CODEL 0
-	#define DRB_QUEUES_CODEL 0
-	#define DYNAMIC_QUEUE 0
-	#define MAX_NUM_PACK_DRB 10
-	#define MAX_NUM_PACK_QFI 1
-	#define QFI_QUEUE_PACER 0
-        #define DYN_RADIO_CHANNEL 1
-#endif
-
-#if FIRST_9th 
-	#define FIRST_SCENARIO 1
 	#define UPF_SCHED_TICK 1000
 	#define SDAP_SCHED_TICK 1000
 	#define UPF_QUEUES_CODEL 0
@@ -172,7 +158,7 @@
         #define DYN_RADIO_CHANNEL 1
 #endif
 
-#if FIRST_10th 
+#if FIRST_9th 
 	#define FIRST_SCENARIO 1
 	#define UPF_SCHED_TICK 1000
 	#define SDAP_SCHED_TICK 1000
@@ -186,7 +172,7 @@
         #define DYN_RADIO_CHANNEL 1
 #endif
 
-#if FIRST_11th 
+#if FIRST_10th 
 	#define FIRST_SCENARIO 1
 	#define UPF_SCHED_TICK 1000
 	#define SDAP_SCHED_TICK 1000
@@ -201,7 +187,7 @@
         #define DYN_RADIO_CHANNEL 1
 #endif
 
-#if FIRST_12th 
+#if FIRST_11th 
 	#define FIRST_SCENARIO 1
 	#define UPF_SCHED_TICK 1000
 	#define SDAP_SCHED_TICK 1000
