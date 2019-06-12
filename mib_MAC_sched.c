@@ -132,6 +132,10 @@ void* thread_MAC_sched(void* threadData)
       } else {
         printf("TCP Packet with id = %d, was at the queue UPF = %ld, at QFI = %ld and at DRB = %ld for a total of %ld at timestamp = %ld with packets at QFI = %ld and packets total = %ld \n", p->idP, p->arrival_QFI - p->arrival_UPF, p->arrival_DRB - p->arrival_QFI, now - p->arrival_DRB, now - p->arrival_UPF , now, p->packets_QFI, p->packets_total); 
       }
+#if DYN_RLC
+  const uint32_t DRB_QUEUE = 0;
+  mib_dyn_sojourn_time( data->drbQ->dyn[DRB_QUEUE], now - p->arrival_DRB);
+#endif
 
       free(dequePackets[i].packet);	
       ++pacDeq;
@@ -146,7 +150,8 @@ void* thread_MAC_sched(void* threadData)
 #endif    
 
 #if CQI_PACER
-    mib_send_data_SDAP(numPackets);
+    const uint32_t DRB_idx = 0;
+    mib_send_data_SDAP(numPackets, DRB_idx);
 #endif
   }
   return NULL;

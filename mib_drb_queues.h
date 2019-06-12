@@ -6,6 +6,7 @@
 #include "5G_qos_model.h"
 #include "mib_stats.h"
 #include "mib_scenario.h"
+#include "mib_cqi_pacer.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -17,6 +18,10 @@ struct DRB_queues
   struct  QueueCodel* queues[DRB_NUM_QUEUES];
 #else  
   struct LockFreeQueue* queues[DRB_NUM_QUEUES];
+#endif
+
+#if CQI_PACER
+      struct mib_cqi_pacer pacer[DRB_NUM_QUEUES];
 #endif
 
 #if DYNAMIC_QUEUE 

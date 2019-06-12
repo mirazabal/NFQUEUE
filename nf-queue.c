@@ -132,7 +132,8 @@ static uint32_t create_hash(struct iphdr* ipHeader, uint32_t id)
     printf("UDP Packet with id = %d, inserted into UPF at timestamp = %ld \n", id, mib_get_time_us() ); 
     return 0;
   }
-
+  // lets see if it does better...
+  return 1;
 
   char buffer[BUFFER_SIZE];
   add_ip_addr(ipHeader,buffer);

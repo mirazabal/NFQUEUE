@@ -11,7 +11,7 @@ void mib_set_realtime_priority(uint32_t priority)
   params.sched_priority = priority;
   int ret = pthread_setschedparam(this_thread, SCHED_RR, &params);
   if(ret != 0){
-    printf("Error while setting the priority of the SDAP thread \n");
+    printf("Error while setting the priority of this thread \n");
   }
 }
 

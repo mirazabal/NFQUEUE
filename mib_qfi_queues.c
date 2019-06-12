@@ -26,8 +26,8 @@ void init_QFI_queues(struct QFI_queues* qfiQ, void(*verdict)(uint32_t, uint32_t,
 
 #if QFI_QUEUE_PACER 
     mib_init_estimator(&qfiQ->est[i]);
-#elif CQI_PACER
-    mib_cqi_pacer_init(&qfiQ->pacer[i]);
+//#elif CQI_PACER
+//    mib_cqi_pacer_init(&qfiQ->pacer[i]);
 #endif	
 
   }
@@ -61,8 +61,8 @@ void addPacketToQFI(struct QFI_queues* qfiQ, uint8_t queueIdx, struct packet_t* 
 
 #if QFI_QUEUE_PACER 
 	mib_rate_enqueu(&qfiQ->est[queueIdx], 1);
-#elif CQI_PACER
-        mib_cqi_pacer_enqueue( &qfiQ->pacer[queueIdx], 1 );
+//#elif CQI_PACER
+//        mib_cqi_pacer_enqueue( &qfiQ->pacer[queueIdx], 1 );
 #endif
 }
 
@@ -102,9 +102,9 @@ static inline uint32_t getQFIMaxNumberPackets(struct QFI_queues* qfiQ, uint8_t q
 
 uint32_t getQFIAvailablePackets(struct QFI_queues* qfiQ, uint8_t qfiIdx)
 {
-#if CQI_PACER
-  return mib_cqi_pacer_get_opt(&qfiQ->pacer[qfiIdx]);
-#endif  
+//#if CQI_PACER
+//  return mib_cqi_pacer_get_opt(&qfiQ->pacer[qfiIdx]);
+//#endif  
   uint32_t packetsAtQFI = getQFIBufferStatus(qfiQ, qfiIdx); 
   uint32_t maxPacAllowed = getQFIMaxNumberPackets(qfiQ, qfiIdx); 
 

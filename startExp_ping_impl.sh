@@ -54,7 +54,7 @@ if [ "$CASE" == "7th" ]; then
 echo "bbr" > /proc/sys/net/ipv4/tcp_congestion_control
 fi
 
-iperf3 -c 192.168.1.145 -t 45 -M 1500  $NUM_CONN > $IPERF_DEST_FILE &
+iperf3 -c 192.168.1.145 -t 40 -M 1500  $NUM_CONN > $IPERF_DEST_FILE &
 sleep 3
 cd /home/pi/UDP/client
 
@@ -75,9 +75,8 @@ cd $CASE
 
 ./../../../a.out 192.168.1.145 10020 $PING_LAT $PING_QUANTITY > $IPERF_DEST_FILE &
 
-sleep 50
 HERE
-sleep 50
+sleep 45
 
 ps -A | grep /../../../$EXE_A  | awk '{print $1}' | xargs sudo kill -9
 

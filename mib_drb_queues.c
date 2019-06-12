@@ -14,6 +14,7 @@ static size_t getDRBMaxNumberPackets(struct DRB_queues* drbQ, uint8_t idx)
 #if DYNAMIC_QUEUE 
   return mib_dq_limit(drbQ->dq[idx]);
 #elif DYN_RLC
+  
   return mib_dyn_size(drbQ->dyn[idx]);
 #else
   return MAX_NUM_PACK_DRB;
@@ -38,7 +39,9 @@ void init_DRB_queues(struct DRB_queues* drbQ, void(*verdict)(uint32_t, uint32_t,
 #elif DYN_RLC
     drbQ->dyn[i] = malloc(sizeof(struct mib_dyn_rlc));
     mib_dyn_init(drbQ->dyn[i]);
-#endif
+#elif CQI_PACER
+    mib_cqi_pacer_init(&drbQ->pacer[i]);
+#endif	
 
   }  
 }
@@ -70,13 +73,18 @@ uint64_t get_DRB_avail(struct DRB_queues* drbQ, uint8_t idx)
 
 uint32_t getDRBAvailablePackets(struct DRB_queues* drbQ, uint8_t drbIdx)
 {
+
+#if CQI_PACER
+  return mib_cqi_pacer_get_opt(&drbQ->pacer[drbIdx]);
+#endif  
+
 #if DYNAMIC_QUEUE 
   return mib_dq_avail(drbQ->dq[drbIdx]);
-//	return mib_dq_limit(drbQ->dq[idx]);
+  //	return mib_dq_limit(drbQ->dq[idx]);
 #else
-	uint32_t packetsAtDRB = getDRBBufferStatus(drbQ, drbIdx); 
+  uint32_t packetsAtDRB = getDRBBufferStatus(drbQ, drbIdx); 
   uint32_t maxPacAllowed = getDRBMaxNumberPackets(drbQ, drbIdx); 
-	return maxPacAllowed - packetsAtDRB;
+  return maxPacAllowed - packetsAtDRB;
 #endif
 }
 
@@ -92,6 +100,10 @@ void addPacketToDRB(struct DRB_queues* drbQ, uint8_t queueIdx, struct packet_t* 
 
   if(queueIdx == 0)
        pac_enq++;
+
+#if CQI_PACER
+        mib_cqi_pacer_enqueue( &drbQ->pacer[queueIdx], 1 );
+#endif
 
 #if DRB_QUEUES_CODEL
   mib_queue_codel_enqueu(drbQ->queues[queueIdx],p);

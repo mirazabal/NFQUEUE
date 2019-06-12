@@ -6,28 +6,31 @@ _IPERF_DEST_FILE="iperf_"
 _FILE_END=".txt"
 EXE_A="a.out"
 CASE="1st"
-DIRECTORY="JOURNAL_PING_DYN"
+DIRECTORY="JOURNAL_PING_DYN_FINAL"
 SCENARIO="2nd_scenario"
 PING_LAT="10"
 PING_QUANTITY="3000"
 
 #array_exe_sce_0=('a11.out' 'a121.out' 'a122.out' 'a123.out' 'a13.out' 'a141.out' 'a142.out' 'a143.out' 'a15.out' 'a16.out' 'a17.out' 'a18.out'  'a19.out' 'a110.out' 'a111.out' 'a112.out')
 #array_exe_sce_0=('a16.out' 'a17.out' 'a18.out'  'a19.out' 'a110.out' 'a111.out' 'a112.out')
-array_exe_sce_0=('a26.out' 'a27.out' 'a28.out'  'a29.out' 'a210.out' 'a211.out' 'a212.out')
+array_exe_sce_0=('a26.out' 'a27.out' 'a28.out'  'a29.out' 'a210.out' 'a211.out')
+#array_exe_sce_0=('a211.out')
 #array_exe_sce_1=('a21.out' 'a221.out' 'a222.out' 'a223.out' 'a23.out' 'a241.out' 'a242.out' 'a243.out' 'a25.out' 'a26.out' 'a27.out' 'a28.out' 'a29.out' 'a210.out')
 
 #array_cases=('1st' '2nd_10' '2nd_20' '2nd_30' '3rd' '4th_10' '4th_20' '4th_30' '5th' '6th' '7th' '8th' '9th' '10th' '11th' '12th' )
-array_cases=('6th' '7th' '8th' '9th' '10th' '11th' '12th' )
-array_scenarios=('1st_scenario')
+array_cases=('6th' '7th' '8th' '9th' '10th' '11th')
+#array_cases=('11th')
+array_scenarios=('2nd_scenario')
 #array_scenarios=('1st_scenario' '2nd_scenario')
 
 
-array_lat=('10' '20' '30' '40' '50' '60' '70' )
+array_ms=('10' '20' '30' '40' '50' '60' '70' )
+#array_lat=( '50' '70' )
 #array_quantity=('9000' '4500' '3000' '2250' '1800' '1500' '1320' )
 array_quantity=('3000' '1500' '1000' '750' '600' '500' '430' )
+#array_quantity=( '600' '430' )
 
-
-array_ms=('10' '20' '30' '40' '50' '60' '70')
+#array_ms=( '30' '50' '70')
 
 idx_sce=0
 while [ $idx_sce -le 1 ];
@@ -35,7 +38,7 @@ do
   SCENARIO=${array_scenarios[$idx_sce]}
 
   idx_cases=0
-  while [ $idx_cases -le 6 ];
+  while [ $idx_cases -le 5 ];
   do
 
     if [ $idx_sce == 0 ]; then    
@@ -56,7 +59,7 @@ do
       PING_DEST_FILE="$_PING_DEST_FILE${array_ms[$idx_ping]}.txt"
       IPERF_DEST_FILE="$_IPERF_DEST_FILE${array_ms[$idx_ping]}.txt"
 
-      PING_LAT=${array_lat[$idx_ping]}
+      PING_LAT=${array_ms[$idx_ping]}
       PING_QUANTITY=${array_quantity[$idx_ping]}
 
 

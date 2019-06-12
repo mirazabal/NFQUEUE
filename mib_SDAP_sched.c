@@ -20,7 +20,7 @@ static const int forwardPacket = 1;
 static int endThread = 1;
 
 #if CQI_PACER
-static struct QFI_queues* static_qfiQ;
+static struct DRB_queues* static_drbQ;
 #endif
 //static const uint64_t maxNumberPacketsDRB = MAX_NUM_PACK_DRB; 
 
@@ -117,9 +117,10 @@ static uint8_t selectQFIPacket(struct QFI_queues* qfiQ, struct packetAndQueue* p
 	while(packetsAlreadySelected < numberPackets && actQFI->numActiveQueues != 0 ){
 		for(int i = 0; i < actQFI->numActiveQueues; ++i){
 			uint32_t qfiIdx = actQFI->arrIdx[i];
-			uint8_t drbIdx = mib_get_ouput_for_input(map,qfiIdx); 
-			assert( availPacketsDRB->size[drbIdx] != -1);
-			if(availPacketsDRB->size[qfiIdx] == 0){
+			uint32_t drbIdx = mib_get_ouput_for_input(map,qfiIdx); 
+                        printf("drbIdx = %u", drbIdx);
+			//assert( availPacketsDRB->size[drbIdx] != -1);
+			if(availPacketsDRB->size[drbIdx] <= 0){
 				removeActiveQueue(actQFI,i);  
 				--i;
 				continue;
@@ -136,7 +137,9 @@ static uint8_t selectQFIPacket(struct QFI_queues* qfiQ, struct packetAndQueue* p
 				removeActiveQueue(actQFI, i);
 				--i;
 			}
+                        printf("available packets at DRB before -- = %u \n", availPacketsDRB->size[drbIdx]);
 			--availPacketsDRB->size[drbIdx];
+                        
 
 			packetsSelected[packetsAlreadySelected].packet = p;
 			packetsSelected[packetsAlreadySelected].drbIdx = drbIdx;
@@ -179,10 +182,10 @@ static void getAvailableDRBQueues(struct QFI_queues* qfiQ, struct DRB_queues* dr
 }
 
 #if CQI_PACER
-void mib_send_data_SDAP(uint32_t numPackets)
+void mib_send_data_SDAP(uint32_t numPackets, uint32_t DRB_queueIdx)
 {
-  const uint32_t QFI_QUEUE = 0;
-  mib_cqi_pacer_set( &static_qfiQ->pacer[QFI_QUEUE] , numPackets,  mib_queue_size(static_qfiQ->queues[QFI_QUEUE]));
+//  const uint32_t QFI_QUEUE = 0;
+  mib_cqi_pacer_set( &static_drbQ->pacer[DRB_queueIdx] , numPackets,  mib_queue_size(static_drbQ->queues[DRB_queueIdx]));
 }
 #endif
 
@@ -215,7 +218,7 @@ void* thread_SDAP_sched(void *threadData)
 	struct QFI_queues* qfiQ = data->qfiQ;
 	struct DRB_queues* drbQ = data->drbQ;
 #if CQI_PACER
-        static_qfiQ = data->qfiQ;
+        static_drbQ = data->drbQ;
 #endif
 
 	// const uint8_t DRB_QUEUE_IDX = 0;
@@ -238,7 +241,11 @@ uint32_t numPackets =  getMaxNumberPacketsDRB() - packetsAtDRB < SDAP_NUM_PACKET
 		getActiveQFIQueues(qfiQ, &activeQFIQueues);
 		getAvailableDRBQueues(qfiQ, drbQ, &activeQFIQueues, &availablePacketsPerDRB, &map);
 
-		if(activeQFIQueues.numActiveQueues == 0 || availablePacketsPerDRB.arrSize == 0) continue;
+		if(activeQFIQueues.numActiveQueues == 0 || availablePacketsPerDRB.arrSize == 0){
+                  if( activeQFIQueues.numActiveQueues == 0 )  
+                    printf("No active QFI queue to schedule in the SDAP entity \n");
+                  continue;
+                }
 
 		const uint32_t numPackets = SDAP_NUM_PACKETS_PER_TICK; 
 		uint8_t numPacSel = selectQFIPacket(data->qfiQ, dequePackets, numPackets, &activeQFIQueues, &availablePacketsPerDRB, &map, &qfiQueuesInfo);

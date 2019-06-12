@@ -22,8 +22,8 @@ struct QFI_queues
  
 #if QFI_QUEUE_PACER 
 	struct mib_rate_estimator est[QFI_NUM_QUEUES];
-#elif CQI_PACER
-      struct mib_cqi_pacer pacer[QFI_NUM_QUEUES];
+//#elif CQI_PACER
+//      struct mib_cqi_pacer pacer[QFI_NUM_QUEUES];
 #endif
 
 

@@ -12,8 +12,8 @@
 
 void mib_dyn_init(struct mib_dyn_rlc* dyn)
 {
-  dyn->interval_time_us = 200000; // time in us
-  dyn->target_time_us = 12000;
+  dyn->interval_time_us = 100000; // time in us
+  dyn->target_time_us = 11000;
   dyn->min_size = 2;
   dyn->max_size = 20;
   dyn->factor = 0.1;

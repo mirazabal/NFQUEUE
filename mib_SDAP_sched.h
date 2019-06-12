@@ -17,7 +17,7 @@ void* thread_SDAP_sched(void* threadData);
 void close_SDAP_thread();
 
 #if CQI_PACER
-void  mib_send_data_SDAP(uint32_t numPackets);
+void  mib_send_data_SDAP(uint32_t numPackets, uint32_t DRB_queue);
 #endif
 #endif
 
