@@ -141,6 +141,10 @@ if(SECOND_11th_f)
 	add_definitions(-DSECOND_11th=1)
 endif(SECOND_11th_f)
 
+if(SECOND_12th_f)
+	add_definitions(-DSECOND_12th=1)
+endif(SECOND_12th_f)
+
 
 #SET(CMAKE_SHARED_LINKER_FLAGS="-fprofile-arcs -ftest-coverage")
 #SET(CMAKE_EXE_LINKER_FLAGS="-fprofile-arcs -ftest-coverage")

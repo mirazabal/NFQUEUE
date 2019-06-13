@@ -28,7 +28,7 @@ def get_delay(str1):
                     y.append(n2)
             except Exception:
                pass
-                
+
     print 'Mean value for ' + str1 + ' ' + str(np.mean(y))
     return (np.mean(y), np.std(y))
 
@@ -82,6 +82,7 @@ def generate_ping_mean(str1):
 def get_MAC_utilization(str1):
     counter = 0
     total_num_used_res = 0
+    total_num_res = 0
     print 'value of str1 = ' + str1
     f = open(str1, 'r')
     y = []
@@ -91,7 +92,7 @@ def get_MAC_utilization(str1):
     for line in f:
         if line.startswith('Packets deque at MAC'):
             try:
-                s = line.split()[10];
+                s = line.split()[17];
                 if firstTime == True:
                     firstTime = False
                     firstVal = float(s)
@@ -104,11 +105,12 @@ def get_MAC_utilization(str1):
                     y.append(n2)
                     counter += 1
                     total_num_used_res += n2
+                    total_num_res += int(line.split()[13])
             except Exception:
                 pass
 
-    print 'Total number of resources = ' + str( total_num_used_res ) + ' in thsi times = '  + str(counter)
-    return  total_num_used_res/ (counter*10) 
+    print 'Total number of resources = ' + str(total_num_res) + 'total number of resources used ' +  str( total_num_used_res ) + ' in thsi times = '  + str(counter)
+    return  total_num_used_res/ total_num_res 
 
 
 def generate_utilization_mean(str1):
@@ -134,60 +136,46 @@ def generate_utilization_mean(str1):
 
 
 
-#y1 = generate_ping_mean('1st') 
-#y2 = generate_ping_mean('2nd_10')
-#y3 = generate_ping_mean('2nd_20')
-#y4 = generate_ping_mean('2nd_30')
-#y5 = generate_ping_mean('3rd')
-#y6 = generate_ping_mean('4th_10')
-#y7 = generate_ping_mean('4th_20')
-#y8 = generate_ping_mean('4th_30')
+y1 = generate_ping_mean('1st') 
+y5 = generate_ping_mean('3th')
 
 y10 = generate_ping_mean('6th')
 y11 = generate_ping_mean('7th')
 y12 = generate_ping_mean('8th')
 y13 = generate_ping_mean('9th')
 y14 = generate_ping_mean('10th')
+y15 = generate_ping_mean('11th')
+y16 = generate_ping_mean('12th')
 
 
-#x1 =    get_MAC_utilization('1st') 
-#x2 =   get_MAC_utilization('2nd_10')
-#x3 =  get_MAC_utilization('2nd_20')
-#x4 =   get_MAC_utilization('2nd_30')
-#x5 =  get_MAC_utilization('3rd')
-#x6 =  get_MAC_utilization('4th_10')
-#x7 =  get_MAC_utilization('4th_20')
-#x8 =  get_MAC_utilization('4th_30')
+x1 = generate_utilization_mean('1st')
+x5 = generate_utilization_mean('3th')
+
 x10 = generate_utilization_mean('6th')
 x11 = generate_utilization_mean('7th')
-x12 = generate_utilization_mean('8th')
-x13 = generate_utilization_mean('9th')
+
 x14 = generate_utilization_mean('10th')
+x15 = generate_utilization_mean('11th')
+x16 = generate_utilization_mean('12th')
 
 
 (fig, ax) = plt.subplots(1,7)
 
-#ax[0].plot(x1, y1, 'o-' , linewidth = 3.0, markersize=15, color='red')
-#ax[0].plot(x2, y2, 'v-' , linewidth = 3.0 , markersize=15, color='green')
-#ax[0].plot(x3, y3, '^-' , linewidth = 3.0 , markersize=15, color='blue')
-#ax[0].plot(x4, y4, 's-' , linewidth = 3.0 , markersize=15, color='cyan')
-#ax[1].plot(x5, y5, 'p-' , linewidth = 3.0 , markersize=15, color ='yellowgreen')
-#ax[1].plot(x6, y6, '*-' , linewidth = 3.0 , markersize=15, color='sienna')
-#ax[1].plot(x7, y7, 'h-' , linewidth = 3.0 , markersize=15, color='orange')
-#ax[1].plot(x8, y8, 'd-' , linewidth = 3.0 , markersize=15, color='purple')
-
-
 
 for x in range(0, 7):
+    ax[x].plot(x1[x], y1[x], 'd-' , linewidth = 3.0 , markersize=15, color='cyan')
+    ax[x].plot(x5[x], y5[x], 'd-' , linewidth = 3.0 , markersize=15, color='blue')
     ax[x].plot(x10[x], y10[x], 'd-' , linewidth = 3.0 , markersize=15, color='red')
     ax[x].plot(x11[x], y11[x], 'd-' , linewidth = 3.0 , markersize=15, color='green')
-    ax[x].plot(x12[x], y12[x], 'd-' , linewidth = 3.0 , markersize=15, color='blue')
-    ax[x].plot(x13[x], y13[x], 'd-' , linewidth = 3.0 , markersize=15, color='orange')
+   # ax[x].plot(x12[x], y12[x], 'd-' , linewidth = 3.0 , markersize=15, color='blue')
+   # ax[x].plot(x13[x], y13[x], 'd-' , linewidth = 3.0 , markersize=15, color='orange')
     ax[x].plot(x14[x], y14[x], 'd-' , linewidth = 3.0 , markersize=15, color='purple')
+    ax[x].plot(x15[x], y15[x], 'd-' , linewidth = 3.0 , markersize=15, color='yellow')
+    ax[x].plot(x16[x], y16[x], 'd-' , linewidth = 3.0 , markersize=15, color='pink')
 
-#ax[0].legend(('Default', 'DRB@10', 'DRB@20', 'DRB@30' ), loc = 'left')
+ax[0].legend(('Vanilla', 'CoDel', 'DQL', 'BBR', 'DynRLC', 'CQI_PACER', 'CQI_PACER_ASYNC' ), loc = 'left')
 #ax[1].legend(('CoDel@DRB', 'CoDel@QFI_DRB@10', 'CoDel@QFI_DRB@20', 'CoDel@QFI_DRB@30', 'CoDel@UPF_limit', 'CoDel@QFI_DRB@DQL', 'BBR', 'Max.' ), loc='upper left')
-ax[0].legend(('CoDel@QFI+DQL', 'BBR', 'Max.', 'Pacing+DR@10', 'Pacing+DQL'), loc='upper left')
+#ax[0].legend(('CQI'), loc='upper right')
 plt.rcParams.update({'font.size': 9})
 
 ax[0].set_xlabel('Utilization %')
@@ -199,9 +187,9 @@ ax[0].set_ylabel('Delay in ms')
 #ax[1].set_ylim(8,15)
 
 for x in range (0,7):
-    ax[x].set_ylim(5000,20000)
+#    ax[x].set_ylim(5000,50000)
     ax[x].set_xlim(0.90,1.0)
-    ax[x].grid()
+#    ax[x].grid()
     #ax[1].grid()
 
 plt.show()

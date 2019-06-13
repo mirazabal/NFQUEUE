@@ -11,6 +11,7 @@ struct mib_cqi_pacer
   float TTI;
   uint32_t min_val_pack;
   uint32_t max_val_pack;
+  uint32_t packets_tx;
 };
 
 

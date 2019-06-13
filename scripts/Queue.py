@@ -17,18 +17,20 @@ def get_size(str1):
         if line.startswith("UDP Packet with"):
             s = line.split()[6]
             if s == 'inserted':
-                s = line.split()[18]
-                if firstTime == True:
-                    firstTime = False
-                    firstVal = float(s)
-                n1 = float(s) - firstVal   
+                try:
+                    s = line.split()[18]
+                    if firstTime == True:
+                        firstTime = False
+                        firstVal = float(s)
+                    n1 = float(s) - firstVal   
 
-                s = line.split()[14];
-                n2 = float(s) 
-                if n1 > 2500000 and n1 < 32500000:
-                   y.append(n2 - codelDropped)
-                   x.append(n1)
-    
+                    s = line.split()[14];
+                    n2 = float(s) 
+                    if n1 > 2500000 and n1 < 32500000:
+                         y.append(n2 - codelDropped)
+                         x.append(n1)
+                except Exception:
+                    print 'bad bad very bad style...'
     print 'Mean value = ' + str(np.mean(y))
     return (y, x)
 
@@ -60,6 +62,15 @@ ax[4].plot(x5, y5)
 ax[5].plot(x6, y6)
 ax[6].plot(x7, y7)
 
+y_min = 0
+y_max = 15
+ax[0].set_ylim( y_min , y_max)
+ax[1].set_ylim( y_min , y_max)
+ax[2].set_ylim( y_min , y_max)
+ax[3].set_ylim( y_min , y_max)
+ax[4].set_ylim( y_min , y_max)
+ax[5].set_ylim( y_min , y_max)
+ax[6].set_ylim( y_min , y_max)
 
 #ax.set_title("DRB ping+iperf flow")    
 #ax.set_xlabel('Microseconds')

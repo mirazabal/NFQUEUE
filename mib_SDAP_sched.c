@@ -19,7 +19,7 @@
 static const int forwardPacket = 1;
 static int endThread = 1;
 
-#if CQI_PACER
+#if CQI_PACER || CQI_PACER_ASYNC
 static struct DRB_queues* static_drbQ;
 #endif
 //static const uint64_t maxNumberPacketsDRB = MAX_NUM_PACK_DRB; 
@@ -181,13 +181,15 @@ static void getAvailableDRBQueues(struct QFI_queues* qfiQ, struct DRB_queues* dr
 	availablePacketsDRBQueues->arrSize = idx;
 }
 
-#if CQI_PACER
-void mib_send_data_SDAP(uint32_t numPackets, uint32_t DRB_queueIdx)
+/*
+#if CQI_PACER || CQI_PACER_ASYNC
+void mib_send_data_SDAP(uint32_t channel_max_pac, uint32_t smallest_size, uint32_t DRB_queueIdx)
 {
 //  const uint32_t QFI_QUEUE = 0;
-  mib_cqi_pacer_set( &static_drbQ->pacer[DRB_queueIdx] , numPackets,  mib_queue_size(static_drbQ->queues[DRB_queueIdx]));
+  mib_cqi_pacer_set( &static_drbQ->pacer[DRB_queueIdx] , channel_max_pac, smallest_size);
 }
 #endif
+*/
 
 void close_SDAP_thread()
 {
@@ -217,7 +219,7 @@ void* thread_SDAP_sched(void *threadData)
 
 	struct QFI_queues* qfiQ = data->qfiQ;
 	struct DRB_queues* drbQ = data->drbQ;
-#if CQI_PACER
+#if CQI_PACER || CQI_PACER_ASYNC
         static_drbQ = data->drbQ;
 #endif
 

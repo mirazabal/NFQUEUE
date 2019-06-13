@@ -20,7 +20,7 @@ struct DRB_queues
   struct LockFreeQueue* queues[DRB_NUM_QUEUES];
 #endif
 
-#if CQI_PACER
+#if CQI_PACER || CQI_PACER_ASYNC
       struct mib_cqi_pacer pacer[DRB_NUM_QUEUES];
 #endif
 

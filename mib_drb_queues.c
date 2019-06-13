@@ -8,13 +8,14 @@
 
 static _Atomic uint32_t pac_enq = 0;
 static _Atomic uint32_t pac_deq = 0;
+static struct DRB_queues* sta_drbQ; // use it to cheat, just for statistic purposes, bur very bad idea...
+
 
 static size_t getDRBMaxNumberPackets(struct DRB_queues* drbQ, uint8_t idx)
 {
 #if DYNAMIC_QUEUE 
   return mib_dq_limit(drbQ->dq[idx]);
 #elif DYN_RLC
-  
   return mib_dyn_size(drbQ->dyn[idx]);
 #else
   return MAX_NUM_PACK_DRB;
@@ -23,6 +24,7 @@ static size_t getDRBMaxNumberPackets(struct DRB_queues* drbQ, uint8_t idx)
 
 void init_DRB_queues(struct DRB_queues* drbQ, void(*verdict)(uint32_t, uint32_t, uint32_t), struct stats_t* stats)
 {
+  sta_drbQ = drbQ;
   for(uint8_t i = 0; i < DRB_NUM_QUEUES; i++){
 #if DRB_QUEUES_CODEL
     drbQ->queues[i] = malloc(sizeof(struct QueueCodel));
@@ -39,7 +41,7 @@ void init_DRB_queues(struct DRB_queues* drbQ, void(*verdict)(uint32_t, uint32_t,
 #elif DYN_RLC
     drbQ->dyn[i] = malloc(sizeof(struct mib_dyn_rlc));
     mib_dyn_init(drbQ->dyn[i]);
-#elif CQI_PACER
+#elif CQI_PACER || CQI_PACER_ASYNC
     mib_cqi_pacer_init(&drbQ->pacer[i]);
 #endif	
 
@@ -74,7 +76,7 @@ uint64_t get_DRB_avail(struct DRB_queues* drbQ, uint8_t idx)
 uint32_t getDRBAvailablePackets(struct DRB_queues* drbQ, uint8_t drbIdx)
 {
 
-#if CQI_PACER
+#if CQI_PACER || CQI_PACER_ASYNC
   return mib_cqi_pacer_get_opt(&drbQ->pacer[drbIdx]);
 #endif  
 
@@ -101,7 +103,7 @@ void addPacketToDRB(struct DRB_queues* drbQ, uint8_t queueIdx, struct packet_t* 
   if(queueIdx == 0)
        pac_enq++;
 
-#if CQI_PACER
+#if CQI_PACER || CQI_PACER_ASYNC
         mib_cqi_pacer_enqueue( &drbQ->pacer[queueIdx], 1 );
 #endif
 
@@ -144,5 +146,7 @@ size_t getDRBBufferStatus(struct DRB_queues* drbQ, uint8_t queueIdx)
 
 uint32_t getDRB_0_BufferStatus(void)
 {
-     return pac_enq - pac_deq;
+  const uint32_t queue_idx = 0;
+  return getDRBBufferStatus(sta_drbQ, queue_idx);
+  //return pac_enq - pac_deq;
 }
