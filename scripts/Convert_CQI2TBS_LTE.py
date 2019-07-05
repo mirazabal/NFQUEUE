@@ -33,6 +33,7 @@ def get_num_packets(cqis):
     return arr_data 
 
 cqis = get_CQIs('../Dataset/pedestrian/A_2017.11.21_15.03.50.csv')
+#cqis = get_CQIs('../Dataset/train/A_2017.11.25_12.05.26.csv')
 print cqis
 
 
@@ -42,7 +43,7 @@ packets = get_num_packets(cqis)
 print packets
 
 
-f = open('packets.txt','w') 
+f = open('packets_pedestrian.txt','w') 
 
 f.write( str(len(packets))  + "\n" ) 
 for pack in packets:

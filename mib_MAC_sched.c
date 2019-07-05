@@ -143,6 +143,7 @@ static void* thread_CQI_pacer_async(void* threadData)
 
 void* thread_MAC_sched(void* threadData)
 {
+  mib_set_realtime_priority(sched_get_priority_max(SCHED_RR) - 20);
   struct MAC_thread_data* data = (struct MAC_thread_data*)threadData;   
   struct packetAndQueue dequePackets[MAC_NUM_PACKETS_PER_TICK];
   int arrActiveQueues[DRB_NUM_QUEUES];
@@ -206,7 +207,6 @@ void* thread_MAC_sched(void* threadData)
     mib_cqi_pacer_set(&data->drbQ->pacer[DRB_idx], numPackets,  remaining );
 
 #elif CQI_PACER_ASYNC
-
     const uint32_t DRB_idx = 0;
     uint32_t remaining = mib_queue_size(data->drbQ->queues[DRB_idx]);
 

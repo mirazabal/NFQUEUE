@@ -118,7 +118,7 @@ static uint8_t selectQFIPacket(struct QFI_queues* qfiQ, struct packetAndQueue* p
 		for(int i = 0; i < actQFI->numActiveQueues; ++i){
 			uint32_t qfiIdx = actQFI->arrIdx[i];
 			uint32_t drbIdx = mib_get_ouput_for_input(map,qfiIdx); 
-                        printf("drbIdx = %u", drbIdx);
+                        //printf("drbIdx = %u", drbIdx);
 			//assert( availPacketsDRB->size[drbIdx] != -1);
 			if(availPacketsDRB->size[drbIdx] <= 0){
 				removeActiveQueue(actQFI,i);  
@@ -245,7 +245,7 @@ uint32_t numPackets =  getMaxNumberPacketsDRB() - packetsAtDRB < SDAP_NUM_PACKET
 
 		if(activeQFIQueues.numActiveQueues == 0 || availablePacketsPerDRB.arrSize == 0){
                   if( activeQFIQueues.numActiveQueues == 0 )  
-                    printf("No active QFI queue to schedule in the SDAP entity \n");
+                    //printf("No active QFI queue to schedule in the SDAP entity \n");
                   continue;
                 }
 

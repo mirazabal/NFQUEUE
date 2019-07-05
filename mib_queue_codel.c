@@ -25,8 +25,8 @@ static void init_codel_params(struct QueueCodel* queue)
 	queue->q = malloc(sizeof(struct LockFreeQueue));
   mib_queue_init(queue->q/*,verdict*/);
 
-  queue->interval_ = 300000;
-  queue->target_ =  15000;
+  queue->interval_ = 40000;
+  queue->target_   =  8000;
 }
 
 static void init_mib_stats(struct stats_t* s)
@@ -105,7 +105,7 @@ void* mib_queue_codel_deque(struct QueueCodel* queue)
 {
   int64_t now = mib_get_time_us();
   struct dodequeue_result r = dodequeue(queue,now);
- 	if(r.m == NULL){
+  if(r.m == NULL){
     queue->first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
     return NULL;
   }
@@ -118,17 +118,17 @@ void* mib_queue_codel_deque(struct QueueCodel* queue)
     }
     while (now >= queue->drop_next_ && (queue->dropping_ == 1)) {
       drop_packet(queue); // free_sdu(listP, rlc_boP);
-  
+
       if(mib_queue_size(queue->q) == 0){
         queue->first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
         return NULL;
       }
       r = dodequeue(queue,now);
-     	if(r.m == NULL){
-         queue->first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
-         return NULL;
-       }
-                
+      if(r.m == NULL){
+        queue->first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
+        return NULL;
+      }
+
       if (r.ok_to_drop == 0 || r.m == NULL) { //false
         // leave drop state
         queue->dropping_ = 0;// false;
@@ -146,8 +146,8 @@ void* mib_queue_codel_deque(struct QueueCodel* queue)
     }
     r = dodequeue(queue,now);
     if(r.m == NULL){
-        queue->first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
-        return NULL;
+      queue->first_above_time_ = 0; //time_stamp(std::chrono::microseconds(0));
+      return NULL;
     }
     queue->dropping_ = 1;// true;
     uint32_t delta = queue->count_ - queue->lastcount_;

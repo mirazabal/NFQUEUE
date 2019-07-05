@@ -9,7 +9,7 @@
 	#define QFI_QUEUES_CODEL 0
 	#define DRB_QUEUES_CODEL 0
 	#define DYNAMIC_QUEUE 0
-	#define MAX_NUM_PACK_DRB 15
+	#define MAX_NUM_PACK_DRB 1024
 	#define MAX_NUM_PACK_QFI 1024
         #define DYN_RADIO_CHANNEL 1
 #endif

@@ -24,7 +24,7 @@ def get_delay(str1):
                         x.append(n1)
                         s = line.split()[26];
                         n = float(s) 
-                        if n1 > 2500000 and n1 < 32500000 :
+                        if n1 > 500000 and n1 < 35000000 :
                             y.append(n)
                     except Exception:
                         pass
