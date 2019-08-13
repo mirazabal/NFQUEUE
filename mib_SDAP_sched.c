@@ -73,6 +73,14 @@ static inline void printQFIStatus(struct QFI_queues* qfiQ, struct ActiveQFIQueue
 		uint32_t queueIdx = availQFI->arrIdx[i];
 		uint32_t queueSize = getQFIBufferStatus(qfiQ, queueIdx);
 		printf("QFI queue idx = %d with size = %d at timestamp = %ld \n", queueIdx, queueSize, mib_get_time_us()); 
+#if QFI_QUEUE_PACER 
+#if CQI_PACER || CQI_PACER_ASYNC
+        const uint32_t DRB_QUEUE = 0;
+        const uint32_t total_tx = mib_cqi_pacer_get_total_tx(&static_drbQ->pacer[DRB_QUEUE]);
+        if(queueSize > total_tx + 5)
+	        mib_pacing_saturation_detected(&qfiQ->est[queueIdx]);
+#endif
+#endif
 	}
 }
 
@@ -182,6 +190,7 @@ static void getAvailableDRBQueues(struct QFI_queues* qfiQ, struct DRB_queues* dr
 }
 
 /*
+
 #if CQI_PACER || CQI_PACER_ASYNC
 void mib_send_data_SDAP(uint32_t channel_max_pac, uint32_t smallest_size, uint32_t DRB_queueIdx)
 {

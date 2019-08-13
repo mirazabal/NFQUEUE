@@ -1,16 +1,29 @@
 #include "mib_cqi_pacer.h"
 #include "mib_time.h"
 
+#include <assert.h>
 #include <stdio.h>
+
+
 
 void mib_cqi_pacer_set(struct mib_cqi_pacer* p, int32_t channel_buffer, int32_t remaining)
 {
-  printf("Into mib_cqi_pacer_set, channel_buffer = %u, remaining = %u \n",channel_buffer, remaining);
+  assert(channel_buffer > -1 && remaining > -1);
+  printf("Into mib_cqi_pacer_set, channel_buffer = %d, remaining = %d \n",channel_buffer, remaining);
+  pthread_mutex_lock(&p->lock);
   p->pack_to_send = channel_buffer > remaining ? channel_buffer - remaining : 1;
-  printf("Packets to send per TTI =  %d \n", p->pack_to_send);
+  pthread_mutex_unlock(&p->lock);
+  printf("Packets to send per TTI =  %u\n", p->pack_to_send);
+  printf("Changed at 11th case\n");
   p->packets_tx = 0;
   p->slack_last_time = mib_get_time_us();
 }
+
+uint32_t mib_cqi_pacer_get_total_tx(struct mib_cqi_pacer* p)
+{
+    return p->pack_to_send;
+}
+
 
 uint32_t mib_cqi_pacer_get_opt(struct mib_cqi_pacer* p)
 {
@@ -24,7 +37,15 @@ uint32_t mib_cqi_pacer_get_opt(struct mib_cqi_pacer* p)
   float percentage_time =  time_ / p->TTI + 0.33;
 
   printf("percentage_time =  %f,  time_ = %ld \n", percentage_time, time_);
-  uint32_t theoretical_sent = p->pack_to_send * percentage_time;
+  if(percentage_time > 6){
+    if(p->pack_to_send > 5){
+        pthread_mutex_lock(&p->lock);
+        p->pack_to_send = 0.75 * (float)p->pack_to_send;
+        pthread_mutex_unlock(&p->lock);
+    }
+  }
+
+  uint32_t theoretical_sent =  (float)(p->pack_to_send) * percentage_time;
 
   uint32_t ret_val = theoretical_sent > p->packets_tx ? theoretical_sent - p->packets_tx : 0;
 
@@ -46,6 +67,7 @@ void mib_cqi_pacer_init(struct mib_cqi_pacer* p)
   p->pack_to_send = 5;
   p->TTI = 10000.0;
   p->packets_tx = 0;
+  pthread_mutex_init(&p->lock, NULL);
 }
 
 void mib_cqi_pacer_enqueue(struct mib_cqi_pacer* p, uint32_t number)

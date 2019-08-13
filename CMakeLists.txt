@@ -94,6 +94,18 @@ if(FIRST_14th_f)
   add_definitions(-DFIRST_14th=1)
 endif(FIRST_14th_f)
 
+if(FIRST_15th_f)
+  add_definitions(-DFIRST_15th=1)
+endif(FIRST_15th_f)
+
+if(FIRST_16th_f)
+  add_definitions(-DFIRST_16th=1)
+endif(FIRST_16th_f)
+
+if(FIRST_17th_f)
+  add_definitions(-DFIRST_17th=1)
+endif(FIRST_17th_f)
+
 
 
 ###### Second Scenario

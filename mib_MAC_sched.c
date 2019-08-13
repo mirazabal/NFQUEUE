@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#define MAC_NUM_PACKETS_PER_TICK 10
+#define MAC_NUM_PACKETS_PER_TICK 150
 
 
 #define mib_min(a,b) \
@@ -64,11 +64,12 @@ static inline void printDRBStatus(struct DRB_queues* drbQ, uint8_t numActiveQueu
 }
 
 
-static uint8_t selectDRBPacket(struct DRB_queues* drbQ, uint8_t numActiveQueues, struct packetAndQueue* packetsSelected, uint8_t numberPackets, int* arrActiveQueues)
+static uint16_t selectDRBPacket(struct DRB_queues* drbQ, uint8_t numActiveQueues, struct packetAndQueue* packetsSelected, uint64_t numberPackets, int* arrActiveQueues)
 {
   printDRBStatus(drbQ, numActiveQueues, arrActiveQueues);
 
   uint8_t packetsAlreadySelected = 0;
+  uint64_t packetsAlreadySelectedBytes = 0; 
   while(packetsAlreadySelected < numberPackets && numActiveQueues != 0){
     for(int i = 0; i < numActiveQueues; ++i)
     {
@@ -83,7 +84,13 @@ static uint8_t selectDRBPacket(struct DRB_queues* drbQ, uint8_t numActiveQueues,
       if(p == NULL) { // can happen... needs more deep inspection
         continue;
       }
-
+      
+      if(p->UDP_packet == 1){
+          packetsAlreadySelectedBytes += 100; 
+      } else {
+          packetsAlreadySelectedBytes += 1500; 
+      }
+     
       packetsSelected[packetsAlreadySelected].packet = p;
       packetsSelected[packetsAlreadySelected].queueIdx = queueIdx;
       ++packetsAlreadySelected; 
@@ -159,17 +166,19 @@ void* thread_MAC_sched(void* threadData)
     usleep(10000);
     sched_yield();
 
+ //   uint64_t numBytes = 0;
 #if DYN_RADIO_CHANNEL
     uint8_t numPackets = get_num_packets(num_loop, &data->dyn_chan_data); 
 #else
     uint8_t numPackets = MAC_NUM_PACKETS_PER_TICK;
 #endif 
 
+//    numBytes = numPackets*1500;
     uint8_t numActQueues = getActiveDRBQueues(data->drbQ,arrActiveQueues);
-    uint8_t numPacSel = selectDRBPacket(data->drbQ, numActQueues, dequePackets, numPackets, arrActiveQueues);
+    uint16_t numPacSel = selectDRBPacket(data->drbQ, numActQueues, dequePackets, numPackets, arrActiveQueues);
 
-    uint64_t pacDeq = 0;
-    for(uint8_t i = 0; i < numPacSel; ++i)
+    uint32_t pacDeq = 0;
+    for(uint16_t i = 0; i < numPacSel; ++i)
     {
       struct packet_t* p = dequePackets[i].packet;
       data->send_verdict_cb(data->NFQUEUE_NUM, (*dequePackets[i].packet).idP,forwardPacket);

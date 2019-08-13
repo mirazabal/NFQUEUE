@@ -26,7 +26,7 @@ struct mib_rate_estimator
 	uint32_t opt_occupancy;
 	uint32_t discrete_time_next_entity;
 
-	uint32_t num_ticks;
+	uint64_t num_ticks;
 	uint32_t discrete_time;
 };
 

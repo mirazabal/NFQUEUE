@@ -63,7 +63,7 @@ static void init_threads_data(void(*verdict)(uint32_t, uint32_t, uint32_t))
   mac_data.drbQ = &drb_queues;
   mac_data.stats = &stats;
 #if DYN_RADIO_CHANNEL
-      mac_data.dyn_chan_data = read_channel_data("/home/mikel/workspace/NFQUEUE/scripts/packets_pedestrian.txt");
+      mac_data.dyn_chan_data = read_channel_data("/home/hamilton/workspace/NFQUEUE/scripts/packets_train.txt");
 #endif 
 }
 

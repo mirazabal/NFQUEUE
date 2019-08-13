@@ -12,15 +12,16 @@
 struct PacketTimer
 {
   int64_t usecs[MAX_NUM_PACKETS];
-  int64_t pos;
+  int64_t enq_pos;
+  int64_t deq_pos;
 };
 	
 struct QueueCodel
 {
   uint64_t packets_dropped; //= 0;
   struct PacketTimer pTimer;
-  uint32_t first_above_time_; // = 0; //
-  uint32_t drop_next_;// = 0;
+  int64_t first_above_time_; // = 0; //
+  int64_t drop_next_;// = 0;
   uint32_t count_ ; //= 0;
   uint32_t lastcount_; // = 0;
   uint8_t	dropping_ ; //= false;

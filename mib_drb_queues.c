@@ -10,6 +10,7 @@ static _Atomic uint32_t pac_enq = 0;
 static _Atomic uint32_t pac_deq = 0;
 static struct DRB_queues* sta_drbQ; // use it to cheat, just for statistic purposes, bur very bad idea...
 
+static void (*send_verdict_cb)(uint32_t, uint32_t, uint32_t);
 
 static size_t getDRBMaxNumberPackets(struct DRB_queues* drbQ, uint8_t idx)
 {
@@ -25,6 +26,7 @@ static size_t getDRBMaxNumberPackets(struct DRB_queues* drbQ, uint8_t idx)
 void init_DRB_queues(struct DRB_queues* drbQ, void(*verdict)(uint32_t, uint32_t, uint32_t), struct stats_t* stats)
 {
   sta_drbQ = drbQ;
+  send_verdict_cb = verdict;
   for(uint8_t i = 0; i < DRB_NUM_QUEUES; i++){
 #if DRB_QUEUES_CODEL
     drbQ->queues[i] = malloc(sizeof(struct QueueCodel));
@@ -99,6 +101,16 @@ void addPacketToDRB(struct DRB_queues* drbQ, uint8_t queueIdx, struct packet_t* 
   //uint32_t packetsAtDRB = getDRBBufferStatus(drbQ, queueIdx); 
   //p->packets_DRB = packetsAtDRB;
   p->arrival_DRB = mib_get_time_us();
+
+
+  
+ size_t buffer_size = getDRBBufferStatus(drbQ, queueIdx);
+ 
+ if(buffer_size > 30){
+    static const int dropPacket = 0;
+    send_verdict_cb( queueIdx, p->idP, dropPacket);
+    return;
+ }
 
   if(queueIdx == 0)
        pac_enq++;
