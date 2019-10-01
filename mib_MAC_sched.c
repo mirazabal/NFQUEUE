@@ -3,6 +3,7 @@
 #include "mib_drb_queues.h"
 #include "mib_MAC_sched.h"
 #include "mib_time.h"
+#include "mib_realtime_prio.h"
 #include "mib_stats.h"
 
 #include <math.h>
@@ -200,7 +201,7 @@ void* thread_MAC_sched(void* threadData)
       free(dequePackets[i].packet);	
       ++pacDeq;
     }
-    printf("Packets deque at MAC scheduler = %lu from a maximum possible of = %u at timestamp = %ld \n", pacDeq, numPackets, mib_get_time_us()); 
+    printf("Packets deque at MAC scheduler = %u from a maximum possible of = %u at timestamp = %ld \n", pacDeq, numPackets, mib_get_time_us()); 
     assert(pacDeq < numPackets + 1);
 #if DYNAMIC_QUEUE
     mib_dq_dequeued(data->drbQ->dq[0], pacDeq);

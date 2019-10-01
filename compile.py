@@ -32,7 +32,7 @@ for idx,exe in enumerate(exeNames):
     else:    
         print("Directory " , dirName ,  " already exists")    
 
-    bashCommand =  "cd build/ && cmake .. " + flagNames[idx] + "  && make"
+    bashCommand =  "cd build/ && cmake .. " + flagNames[idx] + "  && make -j$nproc"
     os.system(bashCommand)
 
     bashCommand = "cp  build/5G_QoS . && mv 5G_QoS " + exe
